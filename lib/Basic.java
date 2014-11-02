@@ -5,7 +5,7 @@ class Main {
 }
 
 class A {
-	public int run() {
+	public int run(int x) {
 		int x;
 		x = 1;
 		return x;

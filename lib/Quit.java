@@ -14,30 +14,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import java.io.*;
-import java.util.*;
-import java.lang.*;
-import visitor.*;
-import syntaxtree.*;
-
-public class Typecheck
+public class Quit
 {
-  public static void main(String [] args)
+  public Quit() {}
+  public void q()
   {
-    try
-    {
-      Node root = new MiniJavaParser(System.in).Goal();
-      BuildSymbolTableVisitor bstv = new BuildSymbolTableVisitor();
-      root.accept(bstv);
-      SymbolTable st = bstv.getSymbolTable();
-      TypeCheckingVisitor tcv = new TypeCheckingVisitor(st);
-      //root.accept(tcv);
-      System.out.println("Program type checked successfully");
-    }
-    catch(ParseException e)
-    {
-      System.out.println("Parsing error");
-    }
+    // use stderr or stdout?
+    System.err.println("Type error");
+    System.exit(1);
+  }
+
+  public void q(String s)
+  {
+    System.err.println(s);
+    System.err.println("Type error");
+    System.exit(1);
   }
 }
-    

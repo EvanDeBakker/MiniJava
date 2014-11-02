@@ -14,65 +14,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import syntaxtree.*
-import visitor.*
+import syntaxtree.*;
+import visitor.*;
 import java.util.*;
 
-public class BuildSymbolTable extends DepthFirstVisitor
+public class BuildSymbolTableVisitor extends DepthFirstVisitor
 {
   private SymbolTable st;
   private String cur_cid;
   private String cur_mid;
+  private Quit quit;
 
-  public BuildSymbolTable()
+  public BuildSymbolTableVisitor()
   {
     cur_cid = null;
     cur_mid = null;
     st = new SymbolTable();
+    quit = new Quit();
   }
 
-  public SymbolTable getST() {return st;}
-  
-  //
-  // Auto class visitors--probably don't need to be overridden.
-  //
-  public void visit(NodeList n) 
+  public SymbolTable getSymbolTable()
   {
-    for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); )
-      e.nextElement().accept(this);
-  }
-
-  public void visit(NodeListOptional n) 
-  {
-    if ( n.present() )
-      for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); )
-        e.nextElement().accept(this);
-  }
-
-  public void visit(NodeOptional n) {
-    if ( n.present() )
-      n.node.accept(this)
-  public void visit(NodeSequence n) {
-    for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); )
-      e.nextElement().accept(this);
-  }
-
-  public void visit(NodeToken n) { }
-
-  //
-  // User-generated visitor methods below
-  //
-
-  /**
-   * f0 -> MainClass()
-   * f1 -> ( TypeDeclaration() )*
-   * f2 -> <EOF>
-   */
-  public void visit(Goal n) throw TypeCheckingException
-  {
-    n.f0.accept(this);
-    n.f1.accept(this);
-    n.f2.accept(this);
+    return st;
   }
 
   /**
@@ -95,18 +58,22 @@ public class BuildSymbolTable extends DepthFirstVisitor
    * f16 -> "}"
    * f17 -> "}"
    */
-  public void visit(MainClass n) throw TypeCheckingException
+  @Override
+  public void visit(MainClass n)
   {
     if(cur_cid != null || cur_mid != null)
-      throw new TypeCheckingException();
+      quit.q();
     String cid = n.f1.f0.toString();
     // set states
     cur_cid = cid;
-    cur_mid = null;
-    if(!st.addClass(cid, null))
-    {
-      throw new TypeCheckingException();
-    }
+    if(!st.addClazz(cid, null))
+      quit.q("Cannot add main class");
+    Clazz c = st.getClazz(cid);
+    if(c == null)
+      quit.q();
+    String mid = n.f6.toString();
+    c.addMeth(mid, null);
+    cur_mid = mid;
     n.f0.accept(this);
     n.f1.accept(this);
     n.f2.accept(this);
@@ -130,14 +97,6 @@ public class BuildSymbolTable extends DepthFirstVisitor
     cur_mid = null;
   }
  
-    /**
-    * f0 -> ClassDeclaration()
-    *       | ClassExtendsDeclaration()
-    */
-  public void visit(TypeDeclaration n) throw TypeCheckingException
-  {
-    n.f0.accept(this);
-  }   
 
   /**
    * f0 -> "class"
@@ -147,17 +106,15 @@ public class BuildSymbolTable extends DepthFirstVisitor
    * f4 -> ( MethodDeclaration() )*
    * f5 -> "}"
    */
-  public void visit(ClassDeclaration n) throw TypeCheckingException 
+  @Override
+  public void visit(ClassDeclaration n)
   {
     if(cur_cid != null || cur_mid != null)
-      throw new TypeCheckingException();
+      quit.q();
     String cid = n.f1.f0.toString();
     cur_cid = cid;
-    cur_mid = null;
-    if(!st.addClass(cid, null))
-    {
-      throw new TypeCheckingException();
-    }
+    if(!st.addClazz(cid, null))
+      quit.q("Cannot add class");
     n.f0.accept(this);
     n.f1.accept(this);
     n.f2.accept(this);
@@ -179,18 +136,16 @@ public class BuildSymbolTable extends DepthFirstVisitor
    * f6 -> ( MethodDeclaration() )*
    * f7 -> "}"
    */
-  public void visit(ClassExtendsDeclaration n) throw TypeCheckingException
+  @Override
+  public void visit(ClassExtendsDeclaration n)
   {
     if(cur_cid != null || cur_mid != null)
-      throw new TypeCheckingException();
+      quit.q();
     String cid = n.f1.f0.toString();
     cur_cid = cid;
-    cur_mid = mid;
     String p = n.f3.f0.toString();
-    if(!st.addClass(cid, p))
-    {
-      throw new TypeCheckingException();
-    }
+    if(!st.addClazz(cid, p))
+      quit.q("Cannot add class(extend)");
     n.f0.accept(this);
     n.f1.accept(this);
     n.f2.accept(this);
@@ -209,47 +164,29 @@ public class BuildSymbolTable extends DepthFirstVisitor
    * f1 -> Identifier()
    * f2 -> ";"
    */
-  public void visit(VarDeclaration n) throw TypeCheckingException
+  @Override
+  public void visit(VarDeclaration n)
   {
     if(cur_cid == null)
-      throw new TypeCheckingException();
-    Class cur_c = st.getClass(cur_cid);
+      quit.q();
+    Clazz cur_c = st.getClazz(cur_cid);
     String vid = n.f1.f0.toString();
     if(cur_c == null)
-      throw new TypeCheckingException();
+      quit.q();
     if(cur_mid == null)
     {
-      boolean sucesss = false;
-      if(n.f0.f0.which == 0)
-        success = cur_c.addVar(vid, new ArrayType());
-      else if(n.f0.f0.which == 1)
-        sucesss = cur_c.addVar(vid, new BooleanType());
-      else if(n.f0.f0.which == 2)
-        success = cur_c.addVar(vid, new IntegerType());
-      else if(n.f0.f0.which == 3)
-        sucesss = cur_c.addVar(vid, new Identifier());
-      else
-        throw new TypeCheckingException();
-      if(!sucesss)
-        throw new TypeCheckingException();
+      if(!cur_c.addField(vid, n.f0))
+        quit.q("cannot add fieild in class");
     }
     else
     {
-      Method cur_m = cur_c.getMethod(cur_mid);
+      Meth cur_m = cur_c.getMeth(cur_mid);
       if(cur_m == null)
-        throw new TypeCheckingException();
-      if(n.f0.f0.which == 0)
-        success = cur_m.addLocalVariable(vid, new ArrayType());
-      else if(n.f0.f0.which == 1)
-        sucesss = cur_m.addLocalVariable(vid, new BooleanType());
-      else if(n.f0.f0.which == 2)
-        success = cur_m.addLocalVariable(vid, new IntegerType());
-      else if(n.f0.f0.which == 3)
-        sucesss = cur_m.addLocalVariable(vid, new Identifier());
-      else
-        throw new TypeCheckingException();
-      if(!sucesss)
-        throw new TypeCheckingException();
+        quit.q("cur_m returns null"); 
+      if(!cur_m.addLocalVar(vid, n.f0))
+      {
+        quit.q("Cannot add local variable in method");
+      }
     }
     n.f0.accept(this);
     n.f1.accept(this);
@@ -271,40 +208,17 @@ public class BuildSymbolTable extends DepthFirstVisitor
    * f11 -> ";"
    * f12 -> "}"
    */
-  public void visit(MethodDeclaration n) {
-    if(cur_mid != null)
-      throw new TypeCheckingException();
-    if(cur_cid == null)
-      throw new TypeCheckingException();
-    Class cur_c = st.getClass(cur_cid);
-    if(cur_c == null)
-      throw new TypeCheckingException();
+  @Override
+  public void visit(MethodDeclaration n)
+  {
+    if(cur_mid != null || cur_cid == null)
+      quit.q();
+    Clazz cur_c = st.getClazz(cur_cid);
+    assert(cur_c != null);
     String mid = n.f2.f0.toString();
-    /* if this method be added into the current class,
-     * then this class and all parent classes should not
-     * have this method */
-    while(cur_c != null)
-    {
-      if(cur_c.containsMethod(mid))
-        throw new TypeCheckingException();
-      else
-        cur_c = st.getClass(cur_c.getParentId());
-    }
-    Type t = null;
-    if(n.f1.f0.which == 0)
-      t = new ArrayType();
-    else if(n.f1.f0.which == 1)
-      t = new BooleanType();
-    else if(n.f1.f0.which == 2)
-      t = new IntegerType();
-    else if(n.f1.f0.which == 3)
-      t = new IntegerType();
-    else
-      throw TypeCheckingException();
-    cur_c = st.getClass(cur_cid);
-    if(!cur_c.addMethod(mid, t))
-      throw new TypeCheckingException();
-
+    // check if a method with the same is already in the class 
+    if(!cur_c.addMeth(mid, n.f1))
+      quit.q("Cannot add method in class");
     // change state
     cur_mid = mid;
     n.f0.accept(this);
@@ -312,6 +226,9 @@ public class BuildSymbolTable extends DepthFirstVisitor
     n.f2.accept(this);
     n.f3.accept(this);
     n.f4.accept(this);
+    /* After acceptance of f4, methodtype can be derived,
+     * which means we should check overloading.
+     * but this checking should be performed in STEP 2*/
     n.f5.accept(this);
     n.f6.accept(this);
     n.f7.accept(this);
@@ -320,45 +237,29 @@ public class BuildSymbolTable extends DepthFirstVisitor
     n.f10.accept(this);
     n.f11.accept(this);
     n.f12.accept(this);
-
     // restore state
     cur_mid = null;
   }
 
-
-
-
-
-
-  
+  /**
+   * f0 -> Type()
+   * f1 -> Identifier()
+   */
+  @Override
+  public void visit(FormalParameter n)
+  {
+    if(cur_cid == null || cur_mid == null)
+      quit.q();
+    Clazz cur_c = st.getClazz(cur_cid);
+    if(cur_c == null)
+      quit.q();
+    Meth cur_m = cur_c.getMeth(cur_mid);
+    if(cur_m == null)
+      quit.q();
+    String para_id = n.f1.f0.toString();
+    if(!cur_m.addParameter(para_id, n.f0))
+      quit.q("Cannot add paramter in method");
+    n.f0.accept(this);
+    n.f1.accept(this);
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
