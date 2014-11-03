@@ -153,8 +153,11 @@ public class SymbolTable
         quit.q();
       Meth parent_method = parent_clazz.getMeth(mid);
       if(parent_method != null)
-        if(compareMethodType(parent_method, cur_method))
-          quit.q("Overloading detected : " + cid + "." + mid);
+        if(!compareMethodType(parent_method, cur_method))
+        {
+          quit.q("Overloading detected : " + cid + "." + mid + " <> "
+                 + parent_cid + "." + parent_method);
+        }
       parent_cid = this.getClazz(parent_cid).getParentId();
     }
   }
@@ -227,11 +230,6 @@ public class SymbolTable
         return false;
       }
     }
-    else if(at instanceof SuccessType && bt instanceof SuccessType)
-    {
-      System.out.println("May not happen: comparing two SuccessType");
-      return true;
-    }
     else
      return false;
   }
@@ -258,8 +256,6 @@ public class SymbolTable
       assert(aid != null && bid != null);
       return aid.equals(bid);
     }
-    else if(at instanceof SuccessType && bt instanceof SuccessType)
-      return true;
     else
       return false;
   }
@@ -309,7 +305,7 @@ public class SymbolTable
 
   public void indentPrint(int i, String s)
   {
-    String blank = "";
+    String blank = "* ";
     while(i != 0)
     {
       blank += " ";
@@ -351,6 +347,7 @@ public class SymbolTable
   }
   public void prettyPrinter()
   {
+    System.out.println("*****************************************************");
     for(String clazz_name : hm.keySet())
     {
       Clazz cur_clazz = this.getClazz(clazz_name);
@@ -363,5 +360,22 @@ public class SymbolTable
       for(String method : cur_clazz.methods.keySet())
         printSingleMethod(2, cur_clazz.getMeth(method));
     }
+    System.out.println("*****************************************************");
+  }
+
+  public Node getNodeFromType(Type rt)
+  {
+    if(rt == null)
+      quit.q("wrong");
+    if(rt.f0.choice instanceof IntegerType)
+      return new IntegerType();
+    if(rt.f0.choice instanceof BooleanType)
+      return new BooleanType();
+    if(rt.f0.choice instanceof ArrayType)
+      return new ArrayType();
+    if(rt.f0.choice instanceof Identifier)
+      return rt.f0.choice;
+    else
+      return null;
   }
 }

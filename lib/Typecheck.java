@@ -31,7 +31,7 @@ public class Typecheck
       root.accept(bstv);
       SymbolTable st = bstv.getSymbolTable();
       TypeCheckingVisitor tcv = new TypeCheckingVisitor(st);
-      //root.accept(tcv);
+      root.accept(tcv, null);
       System.out.println("Program type checked successfully");
     }
     catch(ParseException e)
