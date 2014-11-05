@@ -48,16 +48,19 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   {
     st.overallAcyclic();
     st.overallNoOverLoading(); 
-    st.prettyPrinter();
+    // Uncomment this line to dump symbol table info
+    //st.prettyPrinter(); 
   }
 
+  // Note: JTB and JavaCC does not recommend modify this function
+  // Will not be used in MiniJava type checking system
   @Override
   public Node visit(NodeList n, ArrayList<Node> argu) 
   {
     return null;
   }
 
-  // Lots of stupid hacks here
+  // Note: JTB and JavaCC does not recommend modify this function
   @Override
   public Node visit(NodeListOptional n, ArrayList<Node> argu) 
   {
@@ -91,6 +94,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     }
   }
 
+  // Note: JTB and JavaCC does not recommend modify this function
   @Override
   public Node visit(NodeOptional n, ArrayList<Node> argu) 
   {
@@ -100,6 +104,8 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
       return null;
   }
 
+  // Note: JTB and JavaCC does not recommend modify this function
+  // Will not be used in MiniJava system
   @Override
   public Node visit(NodeSequence n, ArrayList<Node> argu) 
   {
@@ -108,7 +114,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     else
     {
       if(n.size() != argu.size())
-        quit.q("Number of parameters mismatches with number of arguments");
+        quit.q("The number of parameters mismatches with the number of arguments");
       for(int i = 0; i < n.size(); i++)
       {
         if(!st.subTyping(n.elementAt(i).accept(this, null), argu.get(i), false))
@@ -118,15 +124,12 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     }
   }
 
+  // Note: JTB and JavaCC does not recommend modify this function
   @Override
   public Node visit(NodeToken n, ArrayList<Node> argu) 
   { 
     return null;
   }
-
-  //
-  // User-generated visitor methods below
-  //
 
   /**
    * f0 -> MainClass()
@@ -164,7 +167,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   @Override
   public Node visit(MainClass n, ArrayList<Node> argu) {
     if(cur_cid != null || cur_mid != null)
-      quit.q("Unexpected Error at 162");
+      quit.q("Unexpected Error");
     String cid = n.f1.f0.toString();
     String mid = n.f6.toString();
     cur_cid = cid;
@@ -196,7 +199,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   @Override
   public Node visit(ClassDeclaration n, ArrayList<Node> argu) {
     if(cur_cid != null || cur_mid != null)
-      quit.q("Unexpecetd Error at 193");
+      quit.q("Unexpecetd Error");
     String cid = n.f1.f0.toString();
     cur_cid = cid;
     n.f4.accept(this, null);
@@ -218,7 +221,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   @Override
   public Node visit(ClassExtendsDeclaration n, ArrayList<Node> argu) {
     if(cur_cid != null || cur_mid != null)
-      quit.q("Unexpected Error at 215");
+      quit.q("Unexpected Error");
     String cid = n.f1.f0.toString();
     cur_cid = cid;
     n.f6.accept(this, null);
@@ -256,14 +259,14 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   @Override
   public Node visit(MethodDeclaration n,  ArrayList<Node> argu) {
     if(cur_mid != null || cur_cid == null)
-      quit.q("Unexpected Error at 259");
+      quit.q("Unexpected Error");
     String mid = n.f2.f0.toString();
     assert(mid != null);
     cur_mid = mid;
     Node f8t = n.f8.accept(this, null);
     Node f10t = n.f10.accept(this, null);
     if(!st.subTyping(f10t, st.getNodeFromType(n.f1), true))
-      quit.q("Return type mismatches with declared return type");
+      quit.q("Return type mismatches with the declared return type");
     cur_mid = null;
     return null;
   }
@@ -606,10 +609,10 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     for(Var v : ps)
     {
       if(v == null)
-        quit.q("Unexpected Error at 585");
+        quit.q("Unexpected Error");
       Node tt = st.getNodeFromType(v.getType());
       if(tt == null)
-        quit.q("Unexpected Error at 588");
+        quit.q("Unexpected Error");
       ts.add(tt);
     }
     // f4 is NodeOptional essentially
@@ -694,6 +697,10 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   /**
    * f0 -> <IDENTIFIER>
    * BAD HACK because of loss of generality
+   * The function can only be applied when we look up a variable 
+   * in a method. 
+   * The function finds variable in the following locations in order:
+   * Parameters -> Local variables -> Class field
    */
   @Override
   public Node visit(Identifier n, ArrayList<Node> argu) {
@@ -702,16 +709,16 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
       String id = n.f0.toString();
       Clazz c = st.getClazz(cur_cid);
       if(c == null)
-        quit.q("Unexpected Error at 679");
+        quit.q("Unexpected Error");
       Meth m = c.getMeth(cur_mid);
       if(m == null)
-        quit.q("Unexpected Error at 682");
+        quit.q("Unexpected Error");
       Var v = m.getParameter(id);
       if(v != null)
       {
         Type t = v.getType();
         if(t == null)
-          quit.q("Unexpected Error at 688");
+          quit.q("Unexpected Error");
         return st.getNodeFromType(t);
       }
       else
@@ -721,7 +728,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
         {
           Type t = v.getType();
           if(t == null)
-            quit.q("Unexpected Error at 698");
+            quit.q("Unexpected Error");
           return st.getNodeFromType(t);
         }
         else
@@ -731,13 +738,13 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
             quit.q("Cannot find variable " + id + " in " + cur_cid + "." + cur_mid);
           Type t = v.getType();
           if(t == null)
-            quit.q("Unexpected Error at 708");
+            quit.q("Unexpected Error");
           return st.getNodeFromType(t);
         }
       }
     }
     // Wrong usage of this function happens!
-    quit.q("Unexpected Error at 741");
+    quit.q("Unexpected Error");
     return null;
   }
 
@@ -748,10 +755,10 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   public Node visit(ThisExpression n, ArrayList<Node> argu) 
   {
     if(cur_cid == null)
-      quit.q("Unexpected Error at 751");
+      quit.q("Unexpected Error");
     Clazz c = st.getClazz(cur_cid);
     if(c == null)
-      quit.q("Unexpected Error at 754");
+      quit.q("Unexpected Error");
     return new Identifier(new NodeToken(cur_cid));
   }
 

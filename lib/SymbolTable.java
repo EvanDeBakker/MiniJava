@@ -69,15 +69,6 @@ public class SymbolTable
     return null;
   }
 
-  public Type getMethType(String cid, String mid)
-  {
-    Meth m = getMeth(cid, mid);
-    if(m == null)
-      return null;
-    else
-      return m.getType();
-  }
-
   public Var getMVar(String cid, String mid, String vid)
   {
     Clazz c = getClazz(cid);
@@ -181,6 +172,8 @@ public class SymbolTable
   
 
   // Return true if a is b's subtype
+  // If [s] is true, we don't go further down to check subtype, which means
+  // only when two types are exactly the same, the function returns true
   public boolean subTyping(Node at, Node bt, boolean s)
   {
     assert(at != null && bt != null);
@@ -195,7 +188,6 @@ public class SymbolTable
     else if(at instanceof Identifier && bt instanceof Identifier)
     {
       ArrayList<String> atset = new ArrayList<String>();
-      ArrayList<String> btset = new ArrayList<String>();
       String aid = ((Identifier)at).f0.toString();
       String bid = ((Identifier)bt).f0.toString();
       assert(aid != null && bid != null);
@@ -211,21 +203,10 @@ public class SymbolTable
             quit.q("Unexpected Error");
           aid = c.getParentId();
         }
-        while(bid != null)
-        {
-          btset.add(bid);
-          Clazz c = this.getClazz(bid);
-          if(c == null)
-            quit.q("Unexpected Error");
-          bid = c.getParentId();
-        }
         for(String m : atset)
         {
-          for(String n : btset)
-          {
-            if(m.equals(n))
-              return true;
-          }
+          if(m.equals(bid))
+            return true;
         }
         return false;
       }
