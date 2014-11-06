@@ -49,7 +49,8 @@ public class SymbolTable
     return hm.get(id); 
   }
 
-  // `Deprecated
+  // used when looking for method in the target class 
+  // and its parent class
   public Meth getMeth(String cid, String mid)
   {
     Clazz c = getClazz(cid);
@@ -69,30 +70,8 @@ public class SymbolTable
     return null;
   }
 
-  public Var getMVar(String cid, String mid, String vid)
-  {
-    Clazz c = getClazz(cid);
-    if(c == null)
-      return null;
-    Meth m = c.getMeth(mid);
-    if(m == null)
-      return null;
-    Var v = m.getParameter(vid);
-    if(v != null)
-      return v;
-    else
-      return m.getLocalVar(vid);
-  }
-
-  public Type getMVarType(String cid, String mid, String vid)
-  {
-    Var v = getMVar(cid, mid, vid);
-    if(v == null)
-      return null;
-    else
-      return v.getType();
-  }
-
+  // used when looking for method in the target class 
+  // and its parent class
   public Var getCField(String cid, String vid)
   {
     Clazz c = getClazz(cid);
@@ -112,14 +91,6 @@ public class SymbolTable
     return null;
   }
 
-  public Type getCFieldType(String cid, String vid)
-  {
-    Var v = getCField(cid, vid);
-    if(v == null)
-      return null;
-    else
-      return v.getType();
-  }
 
   // should be performed only after symbol table is built up
   public void overallNoOverLoading()

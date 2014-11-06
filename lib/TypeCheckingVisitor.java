@@ -601,7 +601,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     if(c == null)
       quit.q("Type checking fails at MessageSend: unknown class");
     String mid = n.f2.f0.toString();
-    Meth m = c.getMeth(mid);
+    Meth m = st.getMeth(cid, mid);
     if(m == null)
       quit.q("Type checking fails at MessageSend: unknown method"); 
     ArrayList<Var> ps = m.getParameters();

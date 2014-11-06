@@ -8,14 +8,14 @@
 5. In ``Typecheck.java``, ``Node root = new MinijavaParser(System.in).Goal()``
   should build up a syntax tree from standard input
 6. The remaining task is to implement vistors to perform type checking.
-  The root will accept two different vistors and finish type checking. According to the book, the type-checking process consists of two phases
+  The root will accept two different vistors and finish type checking. According to the book, the type checking process consists of two phases
   1. build symbol table
   2. type check the statements and expressions
 
-  At least two visitors are required. One will build up symbol table and the other one will do type checking with the help of symbol table.
+  So, at least two visitors are required. One will build up symbol table and the other one will do type checking with the help of symbol table.
 
 ### Details
-* ``BuildSymboltable.java`` will build up symbot table and check type rules related to declation at the meantime.
+* ``BuildSymboltable.java`` will build up symbol table and check type rules related to declation at the meantime.
 * ``TypeCheckingVisitor.java`` will first check acyclic and overloading first using the symbol table. Then, it will start traversing the tree and check statements and expressions.
 
 ### Usage
