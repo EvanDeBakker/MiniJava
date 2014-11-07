@@ -27,7 +27,7 @@ public class Quit
   public void q(String s)
   {
     // Uncomment the following line to print reason of type error
-    //System.err.println(s);
+    System.err.println(s);
     System.err.println("Type error");
     System.exit(1);
   }

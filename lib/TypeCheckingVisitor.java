@@ -172,6 +172,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     String mid = n.f6.toString();
     cur_cid = cid;
     cur_mid = mid;
+    n.f14.accept(this, null);
     n.f15.accept(this, null);
     cur_cid = null;
     cur_mid = null;
@@ -202,6 +203,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
       quit.q("Unexpecetd Error");
     String cid = n.f1.f0.toString();
     cur_cid = cid;
+    n.f3.accept(this, null);
     n.f4.accept(this, null);
     cur_cid = null;
     cur_mid = null;
@@ -224,6 +226,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
       quit.q("Unexpected Error");
     String cid = n.f1.f0.toString();
     cur_cid = cid;
+    n.f5.accept(this, null);
     n.f6.accept(this, null);
     cur_cid = null;
     cur_mid = null;
@@ -237,7 +240,20 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
    */
   @Override
   public Node visit(VarDeclaration n, ArrayList<Node> argu) {
-    // Declartion is already checked in step 1
+    Node vt = st.getNodeFromType(n.f0);
+    if(vt == null)
+      quit.q("Unexpected Error");
+    if(vt instanceof Identifier)
+    {
+      String cid = ((Identifier)vt).f0.toString();
+      if(!st.containsClazz(cid))
+      {
+        if(cur_mid != null)
+          quit.q("Type checking failure: declaring local variable of non-existent type");
+        else
+          quit.q("Type checking failure: declaring field of non-existent type");
+      }
+    }
     return null;
   }
 
@@ -263,6 +279,8 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
     String mid = n.f2.f0.toString();
     assert(mid != null);
     cur_mid = mid;
+    n.f4.accept(this, null);
+    n.f7.accept(this, null);
     Node f8t = n.f8.accept(this, null);
     Node f10t = n.f10.accept(this, null);
     if(!st.subTyping(f10t, st.getNodeFromType(n.f1), true))
@@ -278,8 +296,8 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   @Override
   public Node visit(FormalParameterList n, ArrayList<Node> argu)
   {
-    /* simply return null since there is nothing
-     * we need to check now */
+    n.f0.accept(this, null);
+    n.f1.accept(this, null);
     return null;
   }
 
@@ -289,8 +307,15 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
    */
   @Override
   public Node visit(FormalParameter n, ArrayList<Node> argu) {
-    /* simply return null since there is nothing
-     * we need to check now */
+    Node vt = st.getNodeFromType(n.f0);
+    if(vt == null)
+      quit.q("Unexpected Error");
+    if(vt instanceof Identifier)
+    {
+      String cid = ((Identifier)vt).f0.toString();
+      if(!st.containsClazz(cid))
+        quit.q("Type checking failure: declaring parameter of non-existent type");
+    }
     return null;
   }
 
@@ -302,6 +327,7 @@ public class TypeCheckingVisitor extends GJDepthFirst<Node,ArrayList<Node> >
   public Node visit(FormalParameterRest n, ArrayList<Node> argu) {
     /* simply return null since there is nothing
      * we need to check now */
+    n.f1.accept(this, null);
     return null;
   }
 

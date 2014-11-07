@@ -318,7 +318,7 @@ public class SymbolTable
   public Node getNodeFromType(Type rt)
   {
     if(rt == null)
-      quit.q("wrong");
+      quit.q("Cannot get type");
     if(rt.f0.choice instanceof IntegerType)
       return new IntegerType();
     if(rt.f0.choice instanceof BooleanType)
