@@ -1,4 +1,4 @@
-/*  MiniJava type checking system
+/*  MiniJava program to Vapor compilation program
  *  Copyright (C) 2014  marklrh
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,27 +14,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import syntaxtree.*;
+import java.io.*;
 import java.util.*;
+import java.lang.*;
+import visitor.*;
+import syntaxtree.*;
 
-
-// Variable
-public class Var
+public class J2V
 {
-  public String id;
-  public Type type;
-  public int pos;
-
-  public Var(String id, Type t, int pos)
-  {
-    this.id = id;
-    this.type = t;
-    this.pos = pos;
-  }
-
-  public String getId() {return id;}
-
-  public Type getType() {return type;}
-
-  public int getPos() {return pos;}
+    public static void main(String [] args)
+    {
+        try
+        {
+            Node root = new MiniJavaParser(System.in).Goal();
+            BuildSymbolTableVisitor bstv = new BuildSymbolTableVisitor();
+            root.accept(bstv);
+            SymbolTable st = bstv.getSymbolTable();
+            st.prettyPrinter();
+            DataSegments dss = new DataSegments(st);
+            System.out.println(dss.dumpDataSegments());
+        }
+        catch(ParseException e)
+        {
+            System.out.println("Parsing error");
+        }
+    }
 }
+

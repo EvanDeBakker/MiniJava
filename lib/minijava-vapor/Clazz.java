@@ -23,22 +23,26 @@ public class Clazz
   public String id;
   public String parent_id;
   public HashMap<String, Meth> methods;
+  public ArrayList<Meth> meth_list;
+  public ArrayList<Var>  field_list;
   public HashMap<String, Var> fields;
+  public int cur_field_pos;
 
   public Clazz(String id, String parent_id)
   {
     this.id = id;
     this.parent_id = parent_id;
     methods = new HashMap<String, Meth>();
+    meth_list = new ArrayList<Meth>();
     fields = new HashMap<String, Var>();
+    field_list = new ArrayList<Var>();
+    this.cur_field_pos = 0;
   }
 
   public String getId() {return id;}
 
-  public String getParentId() 
-  {
-    return parent_id;
-  }
+  public String getParentId() {return parent_id;}
+
 
   // methods
   public boolean containsMeth(String id)
@@ -52,10 +56,14 @@ public class Clazz
       return false;
     else
     {
-      methods.put(id, new Meth(id, t));
+      Meth m = new Meth(id, t);
+      methods.put(id, m);
+      meth_list.add(m);
       return true;
     }
   }
+
+  public ArrayList<Meth> getMethList() {return this.meth_list;}
 
   public Meth getMeth(String id)
   {
@@ -74,7 +82,10 @@ public class Clazz
       return false;
     else
     {
-      fields.put(id, new Var(id, t));
+      Var v = new Var(id, t, cur_field_pos);
+      field_list.add(v);
+      fields.put(id, v);
+      cur_field_pos++;
       return true;
     }
   }
@@ -82,5 +93,10 @@ public class Clazz
   public Var getField(String id)
   {
     return fields.get(id);
+  }
+
+  public ArrayList<Var> getFieldList()
+  {
+    return this.field_list;
   }
 }

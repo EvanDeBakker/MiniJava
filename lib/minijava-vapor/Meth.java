@@ -22,24 +22,31 @@ public class Meth
 {
   public String id;
   public Type type;
+  public int position;
+  public int cur_var_pos;
+  public int cur_para_pos;
   public ArrayList<Var> parameters;
   public HashMap<String, Var> local_vars;
+  public ArrayList<Var> var_list;
 
   public Meth(String id, Type t)
   {
     this.id = id;
     this.type = t;
-    parameters = new ArrayList<Var>();
-    local_vars = new HashMap<String, Var>();
+    this.cur_var_pos = 0;
+    this.cur_para_pos = 0;
+    this.parameters = new ArrayList<Var>();
+    this.local_vars = new HashMap<String, Var>();
+    this.var_list = new ArrayList<Var>();
   }
 
   public String getId() {return id;}
 
   public Type getType() {return type;}
 
+  // parameters
   public ArrayList<Var> getParameters() {return parameters;}
 
-  // parameters
   public boolean containsPara(String id)
   {
     for(Var v : parameters)
@@ -57,7 +64,8 @@ public class Meth
       return false;
     else
     {
-      parameters.add(new Var(id, t));
+      parameters.add(new Var(id, t, cur_para_pos));
+      cur_para_pos++;
       return true;
     }
   }
@@ -85,7 +93,8 @@ public class Meth
       return false;
     else
     {
-      local_vars.put(id, new Var(id, t));
+      local_vars.put(id, new Var(id, t, cur_var_pos));
+      cur_var_pos++;
       return true; 
     }
   }
@@ -95,4 +104,11 @@ public class Meth
     return local_vars.get(id);
   }
 
+  public ArrayList<Var> getVarList() {return this.var_list;}
+
+  public int getVarPos(String vid)
+  {
+    Var v = this.getLocalVar(vid);
+    return v.getPos() * 4;
+  }
 }

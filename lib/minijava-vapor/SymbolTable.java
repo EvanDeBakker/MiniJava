@@ -20,12 +20,14 @@ import java.util.*;
 public class SymbolTable
 {
   public HashMap<String, Clazz> hm;
+  public ArrayList<Clazz> clazz_list;
   public Quit quit;
 
   public SymbolTable()
   {
     hm = new HashMap<String, Clazz>();
     quit = new Quit();
+    clazz_list = new ArrayList<Clazz>();
   }
 
   public boolean containsClazz(String id)
@@ -39,7 +41,9 @@ public class SymbolTable
       return false;
     else
     {
-      hm.put(id, new Clazz(id, p));
+      Clazz c = new Clazz(id, p);
+      hm.put(id, c);
+      clazz_list.add(c);
       return true;
     }
   }
@@ -48,6 +52,8 @@ public class SymbolTable
   {
     return hm.get(id); 
   }
+
+  public ArrayList<Clazz> getClazzList() {return this.clazz_list;}
 
   // used when looking for method in the target class 
   // and its parent class
@@ -92,169 +98,6 @@ public class SymbolTable
   }
 
 
-  // should be performed only after symbol table is built up
-  public void overallNoOverLoading()
-  {
-
-    for(String clazz_name : hm.keySet())
-      for(String meth_name : this.getClazz(clazz_name).methods.keySet())
-        singleNoOverLoading(clazz_name, meth_name);
-  }
-
-  // should be performed only after symbol table is built up
-  public void singleNoOverLoading(String cid, String mid)
-  {
-    assert(cid != null && mid != null);
-    Meth cur_method = this.getMeth(cid, mid); // could be safely used
-    assert(cur_method != null);
-    String parent_cid = this.getClazz(cid).getParentId();
-    while(parent_cid != null)
-    {
-      Clazz parent_clazz = this.getClazz(parent_cid);
-      if(parent_clazz == null)
-        quit.q();
-      Meth parent_method = parent_clazz.getMeth(mid);
-      if(parent_method != null)
-        if(!compareMethodType(parent_method, cur_method))
-        {
-          quit.q("Overloading detected : " + cid + "." + mid + " <> "
-                 + parent_cid + "." + parent_method);
-        }
-      parent_cid = this.getClazz(parent_cid).getParentId();
-    }
-  }
-
-  // should be performed only after symbol table is built up
-  public boolean compareMethodType(Meth m, Meth n)
-  {
-    assert(m != null && n != null);
-    ArrayList<Var> m_para = m.getParameters();
-    ArrayList<Var> n_para = n.getParameters();
-    assert(m_para != null && n_para != null);
-    if(m_para.size() != n_para.size())
-      return false;
-    for(int i = 0; i < m_para.size(); i++)
-    {
-      if(!sameType(m_para.get(i).getType(), n_para.get(i).getType()))
-        return false;
-    }
-    return sameType(m.getType(), n.getType());
-  }
-  
-
-  // Return true if a is b's subtype
-  // If [s] is true, we don't go further down to check subtype, which means
-  // only when two types are exactly the same, the function returns true
-  public boolean subTyping(Node at, Node bt, boolean s)
-  {
-    assert(at != null && bt != null);
-    if(at instanceof ArrayType && bt instanceof ArrayType)
-      return true;
-    else if(at instanceof BooleanType && bt instanceof BooleanType)
-      return true;
-    else if(at instanceof IntegerType && bt instanceof IntegerType)
-      return true;
-    else if(at instanceof ArrayType && bt instanceof ArrayType)
-      return true;
-    else if(at instanceof Identifier && bt instanceof Identifier)
-    {
-      ArrayList<String> atset = new ArrayList<String>();
-      String aid = ((Identifier)at).f0.toString();
-      String bid = ((Identifier)bt).f0.toString();
-      assert(aid != null && bid != null);
-      if(s)
-        return aid.equals(bid);
-      else
-      {
-        while(aid != null)
-        {
-          atset.add(aid);
-          Clazz c = this.getClazz(aid);
-          if(c == null)
-            quit.q("Unexpected Error");
-          aid = c.getParentId();
-        }
-        for(String m : atset)
-        {
-          if(m.equals(bid))
-            return true;
-        }
-        return false;
-      }
-    }
-    else
-     return false;
-  }
-
-  // should be performed only after symbol table is built up
-  // Note: only if a and b have exactly the same type, the function
-  // return true. Subtyping is not concerned here
-  public boolean sameType(Type a, Type b)
-  {
-    assert(a != null && b != null);
-    Node at = a.f0.choice, bt = b.f0.choice;
-    if(at instanceof ArrayType && bt instanceof ArrayType)
-      return true;
-    else if(at instanceof BooleanType && bt instanceof BooleanType)
-      return true;
-    else if(at instanceof IntegerType && bt instanceof IntegerType)
-      return true;
-    else if(at instanceof ArrayType && bt instanceof ArrayType)
-      return true;
-    else if(at instanceof Identifier && bt instanceof Identifier)
-    {
-      String aid = ((Identifier)at).f0.toString();
-      String bid = ((Identifier)bt).f0.toString();
-      assert(aid != null && bid != null);
-      return aid.equals(bid);
-    }
-    else
-      return false;
-  }
-
-  // should be performed only after symbol table is built up
-  public void overallAcyclic()
-  {
-    for(String clazz_name : hm.keySet())
-      if(!singleAcyclic(clazz_name))
-        quit.q("Acyclic detected : " + clazz_name);
-  }
-
-  public boolean singleAcyclic(String cid)
-  {
-    assert(cid != null);
-    Clazz cur_clazz = this.getClazz(cid);
-    assert(cur_clazz != null);
-    String parent_cid = cur_clazz.getParentId();
-    while(parent_cid != null)
-    {
-      if(cid.equals(parent_cid))
-        return false;
-      Clazz parent_clazz = this.getClazz(parent_cid);
-      if(parent_clazz == null)
-        quit.q(cid + " cannot extend non-existent class " + parent_cid);
-      else
-        parent_cid = parent_clazz.getParentId();
-    }
-    return true;
-  }
-
-  public boolean allClassParentExists()
-  {
-    for(String clazz_name : hm.keySet())
-    {
-      Clazz cur_clazz = this.getClazz(clazz_name);
-      if(cur_clazz == null)
-        quit.q();
-      String parent_class_id = cur_clazz.getParentId();
-      if(parent_class_id != null)
-        if(this.getClazz(parent_class_id) == null)
-          quit.q(clazz_name + " 's parent" + parent_class_id 
-                 + " does not exist");
-    }
-    return true;
-  }
-
   public void indentPrint(int i, String s)
   {
     String blank = "* ";
@@ -295,39 +138,36 @@ public class SymbolTable
       output += StringOfType(v.getType()) + " -> ";
     output += StringOfType(m.getType());
     indentPrint(i, output + "\n");
-
   }
+
+  public void printSingleVar(int i, Var v)
+  {
+    String output = "";
+    output += v.getId() + " : ";
+    output += StringOfType(v.getType()) + "\n";
+    indentPrint(i, output);
+  }
+
   public void prettyPrinter()
   {
     System.out.println("*****************************************************");
-    for(String clazz_name : hm.keySet())
+    for(Clazz c : this.clazz_list)
     {
-      Clazz cur_clazz = this.getClazz(clazz_name);
-      String pid = cur_clazz.getParentId();
+      String pid = c.getParentId();
       if(pid == null)
-        indentPrint(0, "Class " + cur_clazz.getId() + "\n");
+        indentPrint(0, "Class " + c.getId() + "\n");
       else
-        indentPrint(0, "Class " + cur_clazz.getId() + 
+        indentPrint(0, "Class " + c.getId() +
                     " extends " + pid + "\n");
-      for(String method : cur_clazz.methods.keySet())
-        printSingleMethod(2, cur_clazz.getMeth(method));
+      indentPrint(2, "Fields:\n");
+      for(Var v : c.getFieldList())
+        printSingleVar(4, v);
+      indentPrint(2, "Methods:\n");
+      for(Meth m : c.getMethList())
+        printSingleMethod(4, m);
     }
     System.out.println("*****************************************************");
   }
 
-  public Node getNodeFromType(Type rt)
-  {
-    if(rt == null)
-      quit.q("Cannot get type");
-    if(rt.f0.choice instanceof IntegerType)
-      return new IntegerType();
-    if(rt.f0.choice instanceof BooleanType)
-      return new BooleanType();
-    if(rt.f0.choice instanceof ArrayType)
-      return new ArrayType();
-    if(rt.f0.choice instanceof Identifier)
-      return rt.f0.choice;
-    else
-      return null;
-  }
+
 }
