@@ -20,3 +20,10 @@
 
 ### Usage
 Simply refer to the [release page](https://github.com/marklrh/MiniJava/releases) and download v2.0
+
+## Part 2: MiniJava to Vapor translation
+### Procedure
+1. add more functionalities to ``SymbolTable``
+2. build a class called ``QueryTable`` upon ``SymbolTable`` to provide some convenient APIs for visitor
+3. implement ``IndentPrinter`` to provide convenient APIs for visitor to print vapor instructions
+3. implement ``VaporVisitor`` which takes one ``SymbolTable`` and one ``QueryTable``
