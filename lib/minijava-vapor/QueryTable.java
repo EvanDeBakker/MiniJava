@@ -52,7 +52,6 @@ public class QueryTable
     this.heap_size = new HashMap<String, Integer>();
     this.iPrinter = new IndentationPrinter();
     this.buildDataSegmentsInfo();
-    this.buildFieldPosInfo();
     this.calculateClazzHeapAllocationSize(st);
   }
 
@@ -88,6 +87,13 @@ public class QueryTable
   }
 
   public boolean buildDataSegmentsInfo()
+  {
+    buildFunctionLabelInfo();
+    buildFieldPosInfo();
+    return true;
+  }
+
+  public boolean buildFunctionLabelInfo()
   {
     for(Clazz c : st.getClazzList())
     {
@@ -128,6 +134,48 @@ public class QueryTable
     return true;
   }
 
+  public boolean buildFieldPosInfo()
+  {
+    for(Clazz c: st.getClazzList())
+    {
+      int pos = 0;
+      DataSegment ds = this.getDS(c.getId());
+      ArrayList<Clazz> cl = new ArrayList<Clazz>();
+      Clazz cur_c = c;
+      while(cur_c != null)
+      {
+        cl.add(cur_c);
+        String pid = cur_c.getParentId();
+        if(pid == null)
+          cur_c = null;
+        else
+          cur_c = st.getClazz(pid);
+      }
+      Collections.reverse(cl);
+      for(int i = 0; i < cl.size(); i++)
+      {
+        for(Var parameter1 : cl.get(i).getFieldList())
+        {
+          boolean overriden = false;
+          for(int j = i + 1; j < cl.size(); j++)
+          {
+            for(Var parameter2 : cl.get(j).getFieldList())
+            {
+              if(parameter1.getId().equals(parameter2.getId()))
+                overriden = true;
+            }
+          }
+          if(!overriden)
+          {
+            ds.putFieldPos(parameter1.getId(), pos);
+            pos++;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   // get the position of method in a class
   public int getFunctionLabelPos(String cid, String mid)
   {
@@ -136,31 +184,15 @@ public class QueryTable
     return ds.getFunctionLabelPos(mid);
   }
 
-  public void buildFieldPosInfo() {}
-
   // get the position of field in a class
   public int getFieldPos(String cid, String fvid)
   {
-    Clazz c = st.getClazz(cid);
-    int pos = c.getFieldPos(fvid);
-    if(pos == -1)
-    {
-      assert(false);
-      System.exit(1);
-    }
-    return pos;
-  }
-
-  public boolean isField(String cid, String mid, String vid)
-  {
-    Clazz c = st.getClazz(cid);
-    Meth m = c.getMeth(mid);
-    return !m.containsLocalVariableOrParameter(vid);
+    DataSegment ds = this.getDS(cid);
+    return 4 * (1 + ds.getFieldPos(fvid));
   }
 
   public int getClazzHeapSize(String cid)
   {
     return heap_size.get(cid).intValue();
   }
-
 }

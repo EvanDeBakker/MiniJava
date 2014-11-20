@@ -100,6 +100,7 @@ public class Clazz
     return this.field_list;
   }
 
+  // Deprecated
   public int getFieldPos(String vid)
   {
     // field starts at pos 1 because 0 is for function table

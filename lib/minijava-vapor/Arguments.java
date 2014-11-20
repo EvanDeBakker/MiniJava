@@ -14,6 +14,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// oh, a phantom class!
 public class Arguments
 {
   public Arguments(){}

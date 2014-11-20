@@ -70,7 +70,8 @@ public class IndentationPrinter
    *   Error("null pointer")
    * null1:
    */
-  public String getObjectAllocString(String cid, int indent, int hsize, int tnum, int nnum)
+  public String getObjectAllocString
+  (VaporVisitor vv, String cid, int indent, int hsize, int tnum, int nnum)
   {
     String ret = "";
     String hs = (new Integer(hsize)).toString();
@@ -82,6 +83,8 @@ public class IndentationPrinter
     ret += getIndentStringln(indent, "if " + t + " goto :null" + nn);
     ret += getIndentStringln(indent + 2, "Error(\"null pointer\")");
     ret += getIndentStringln(indent, "null" + nn + ":");
+    vv.incrTNum();
+    vv.incrNullNum();
     return ret;
   }
 

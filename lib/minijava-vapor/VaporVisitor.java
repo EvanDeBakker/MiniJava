@@ -32,8 +32,9 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   private int t_num;
   private int while_num;
   private int if_num;
+  private int if_else_num;
   private int null_num;
-  private int il;
+  private int indent;
   private String cur_cid;
   private String cur_mid;
 
@@ -45,15 +46,16 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     this.t_num = 0;
     this.while_num = 1;
     this.if_num = 1;
+    this.if_else_num = 1;
     this.null_num = 1;
-    this.il = 1;
+    this.indent = 1;
     this.cur_cid = null;
     this.cur_mid = null;
   }
 
-  public void incrIndent() {il += 2;}
+  public void incrIndent() {indent += 2;}
 
-  public void decrIndent() {il -= 2;}
+  public void decrIndent() {indent -= 2;}
 
   public void incrTNum() {t_num += 1;}
 
@@ -62,6 +64,8 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public void incrIfNum() {if_num += 1;}
 
   public void incrNullNum () {null_num += 1;}
+
+  public void resetTNum() {t_num = 0;}
 
   /**
    * f0 -> MainClass()
@@ -100,7 +104,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   @Override
   public Result visit(MainClass n, Arguments argu)
   {
-    iPrinter.printIndentStringln(il, "func Main()");
+    iPrinter.printIndentStringln(indent, "func Main()");
     incrIndent();
     String cid = st.StringOfId(n.f1);
     String mid = n.f6.toString();
@@ -111,6 +115,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     cur_cid = null;
     cur_mid = null;
     decrIndent();
+    resetTNum();
     return new Result("");
   }
 
@@ -195,6 +200,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     // TODO, print ret instruction
     cur_mid = null;
     decrIndent();
+    resetTNum();
     return new Result("");
     /*
     n.f0.accept(this, argu);
@@ -214,11 +220,11 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     */
   }
 
-  @Override
   /**
    * f0 -> FormalParameter()
    * f1 -> ( FormalParameterRest() )*
    */
+  @Override
   public Result visit(FormalParameterList n, Arguments argu) {
     n.f0.accept(this, argu);
     n.f1.accept(this, argu);
@@ -314,12 +320,35 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    * f2 -> Expression()
    * f3 -> ";"
    */
+  /*
+    First we need to load identifier, and then load the result of expression
+    Then, we need to assign the result to identifier
+   */
   @Override
   public Result visit(AssignmentStatement n, Arguments argu) {
-    Result _ret = null;
+    Result rf0 = n.f0.accept(this, argu);
+    Result rf1 = n.f2.accept(this, argu);
+    String assigns = rf0.toString() + " = " + rf1.toString();
+    iPrinter.printIndentStringln(indent, assigns);
+    return (new Result(""));
+  }
+
+  /**
+   * f0 -> Identifier()
+   * f1 -> "["
+   * f2 -> Expression()
+   * f3 -> "]"
+   * f4 -> "="
+   * f5 -> Expression()
+   * f6 -> ";"
+   */
+  public Result visit(ArrayAssignmentStatement n, Arguments argu) {
+
     n.f0.accept(this, argu);
     n.f2.accept(this, argu);
-    return _ret;
+    n.f5.accept(this, argu);
+    n.f6.accept(this, argu);
+    return null;
   }
 
   /**
@@ -328,25 +357,33 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   @Override
   public Result visit(Identifier n, Arguments argu)
   {
-    return new Result(n.f0.toString());
+    String vid = st.StringOfId(n);
+    if(st.isField(cur_cid, cur_mid, vid))
+    {
+      String ret = "";
+      int fpos = qt.getFieldPos(cur_cid, vid);
+      ret += "this+";
+      ret += (new Integer(fpos)).toString();
+      return (new Result(ret));
+    }
+    else
+      return (new Result(vid));
   }
 
-  @Override
   /**
    * f0 -> "new"
    * f1 -> Identifier()
    * f2 -> "("
    * f3 -> ")"
    */
+  @Override
   public Result visit(AllocationExpression n, Arguments argu)
   {
     String cid = st.StringOfId(n.f1);
     int chs = qt.getClazzHeapSize(cid);
-    return null; // TODO
-
-
+    String allocs = iPrinter.getObjectAllocString(this, cid,
+      indent, chs, t_num, null_num);
+    return null;
   }
-
-
 }
 

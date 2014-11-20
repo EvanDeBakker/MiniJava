@@ -190,4 +190,11 @@ public class SymbolTable
     return id.f0.toString();
   }
 
+  public boolean isField(String cid, String mid, String vid)
+  {
+    Clazz c = this.getClazz(cid);
+    Meth m = c.getMeth(mid);
+    return !m.containsLocalVariableOrParameter(vid);
+  }
+
 }
