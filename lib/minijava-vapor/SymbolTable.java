@@ -23,6 +23,7 @@ public class SymbolTable
   public ArrayList<Clazz> clazz_list;
   public Quit quit;
 
+
   public SymbolTable()
   {
     hm = new HashMap<String, Clazz>();
@@ -109,7 +110,7 @@ public class SymbolTable
     System.out.print(blank + s);
   }
 
-
+  // Pretty printer used to debug
   public String StringOfType(Type a)
   {
     if(a == null)
@@ -165,9 +166,28 @@ public class SymbolTable
       indentPrint(2, "Methods:\n");
       for(Meth m : c.getMethList())
         printSingleMethod(4, m);
+      indentPrint(2, "Heap allocation size: " + calcHeapSize(c) + "\n");
     }
     System.out.println("*****************************************************");
   }
 
+
+  // heap allocation info
+  public boolean calculateClazzHeapAllocationSize()
+  {
+    for(Clazz c : this.clazz_list)
+      calcHeapSize(c);
+    return true;
+  }
+
+  public int calcHeapSize(Clazz c)
+  {
+    return c.getFieldList().size();
+  }
+
+  public String StringOfId(Identifier id)
+  {
+    return id.f0.toString();
+  }
 
 }

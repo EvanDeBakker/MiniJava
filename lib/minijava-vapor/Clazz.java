@@ -99,4 +99,17 @@ public class Clazz
   {
     return this.field_list;
   }
+
+  public int getFieldPos(String vid)
+  {
+    // field starts at pos 1 because 0 is for function table
+    int pos = 1;
+    for(Var v : this.field_list)
+    {
+      if(vid == v.getId())
+        return pos * 4;
+      pos++;
+    }
+    return -1;
+  }
 }

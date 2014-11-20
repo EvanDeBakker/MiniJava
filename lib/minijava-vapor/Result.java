@@ -14,32 +14,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import java.io.*;
-import java.util.*;
-import java.lang.*;
-import visitor.*;
-import syntaxtree.*;
-
-public class J2V
+public class Result
 {
-  public static void main(String [] args)
-  {
-    try
-    {
-      Node root = new MiniJavaParser(System.in).Goal();
-      BuildSymbolTableVisitor bstv = new BuildSymbolTableVisitor();
-      root.accept(bstv);
-      SymbolTable st = bstv.getSymbolTable();
-      //st.prettyPrinter();
-      QueryTable qt = new QueryTable(st);
-      System.out.println(qt.dumpDataSegments());
-      VaporVisitor vs = new VaporVisitor(st, qt);
-      root.accept(vs, (new Arguments()));
-    }
-    catch(ParseException e)
-    {
-      System.out.println("Parsing error");
-    }
-  }
-}
+  private String res;
 
+  public Result(){}
+
+  public Result(String s)
+  {
+    this.res = s;
+  }
+
+  public String toString()
+  {
+    return this.res;
+  }
+
+  public boolean addMore(String s)
+  {
+    res += s;
+    return true;
+  }
+
+}

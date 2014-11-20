@@ -1,4 +1,4 @@
-/*  MiniJava type checking system
+/*  MiniJava program to Vapor compilation program
  *  Copyright (C) 2014  marklrh
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,30 +14,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import java.io.*;
-import java.util.*;
-import java.lang.*;
-import visitor.*;
-import syntaxtree.*;
-
-public class Typecheck
+public class Arguments
 {
-  public static void main(String [] args)
-  {
-    try
-    {
-      Node root = new MiniJavaParser(System.in).Goal();
-      BuildSymbolTableVisitor bstv = new BuildSymbolTableVisitor();
-      root.accept(bstv);
-      SymbolTable st = bstv.getSymbolTable();
-      TypeCheckingVisitor tcv = new TypeCheckingVisitor(st);
-      root.accept(tcv, null);
-      System.out.println("Program type checked successfully");
-    }
-    catch(ParseException e)
-    {
-      System.out.println("Parsing error");
-    }
-  }
+  public Arguments(){}
 }
-    

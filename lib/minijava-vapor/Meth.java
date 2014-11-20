@@ -82,14 +82,14 @@ public class Meth
   }
 
   // local variables
-  public boolean containslv(String id)
+  public boolean containsLocalVariableOrParameter(String id)
   {
     return (containsPara(id) || local_vars.containsKey(id));
   }
 
   public boolean addLocalVar(String id, Type t)
   {
-    if(containslv(id))
+    if(containsLocalVariableOrParameter(id))
       return false;
     else
     {
@@ -111,4 +111,6 @@ public class Meth
     Var v = this.getLocalVar(vid);
     return v.getPos() * 4;
   }
+
+
 }
