@@ -26,17 +26,18 @@ import syntaxtree.*;
 
 public class VaporVisitor extends GJDepthFirst<Result, Arguments>
 {
-  private SymbolTable st;
-  private QueryTable qt;
-  private IndentationPrinter iPrinter;
-  private int t_num;
-  private int while_num;
-  private int if_num;
-  private int if_else_num;
-  private int null_num;
-  private int indent;
-  private String cur_cid;
-  private String cur_mid;
+  public SymbolTable st;
+  public QueryTable qt;
+  public IndentationPrinter iPrinter;
+  public int t_num;
+  public int while_num;
+  public int if_num;
+  public int null_num;
+  public int bounds_num;
+  public int ss_num;
+  public int indent;
+  public String cur_cid;
+  public String cur_mid;
 
   public VaporVisitor(SymbolTable st, QueryTable qt)
   {
@@ -46,8 +47,9 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     this.t_num = 0;
     this.while_num = 1;
     this.if_num = 1;
-    this.if_else_num = 1;
     this.null_num = 1;
+    this.bounds_num = 1;
+    this.ss_num = 1;
     this.indent = 1;
     this.cur_cid = null;
     this.cur_mid = null;
@@ -64,6 +66,8 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public void incrIfNum() {if_num += 1;}
 
   public void incrNullNum () {null_num += 1;}
+
+  public void incrBoundsNum() {bounds_num += 1;}
 
   public void resetTNum() {t_num = 0;}
 
@@ -342,13 +346,89 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    * f5 -> Expression()
    * f6 -> ";"
    */
-  public Result visit(ArrayAssignmentStatement n, Arguments argu) {
+  public Result visit(ArrayAssignmentStatement n, Arguments argu)
+  {
+    // get array base
+    Result rf0 = n.f0.accept(this, argu); // base
+    String array_access = iPrinter.ArrayAccess(this, rf0.toString());
+    // get index
+    Result rf2 = n.f2.accept(this, argu); // index
+    String check_index_range = iPrinter.CheckIndexInRange(this, rf2.toString());
+    String element_access = iPrinter.ArrayElementAccess(this, rf2.toString());
+    // store current t_num
+    int e_addr_num = this.t_num;
+    // get right-hand expression
+    Result rf5 = n.f1.accept(this, argu);
+    String assign = iPrinter.ArrayAssignment(this, e_addr_num, rf5.toString());
+    iPrinter.printIndentString(0, check_index_range);
+    iPrinter.printIndentString(0, element_access);
+    iPrinter.printIndentString(0, assign);
+    return (new Result(""));
+  }
 
-    n.f0.accept(this, argu);
-    n.f2.accept(this, argu);
-    n.f5.accept(this, argu);
-    n.f6.accept(this, argu);
-    return null;
+  /**
+   * f0 -> "if"
+   * f1 -> "("
+   * f2 -> Expression()
+   * f3 -> ")"
+   * f4 -> Statement()
+   * f5 -> "else"
+   * f6 -> Statement()
+   */
+  public Result visit(IfStatement n, Arguments argu) {
+    // condition
+    Result rf2 = n.f2.accept(this, argu); // expression
+    String if_cond = iPrinter.IfCondition0(this, rf2.toString());
+    iPrinter.printIndentString(0, if_cond);
+    incrIndent();
+    // statement
+    Result rf4 = n.f4.accept(this, argu);
+    Strint if_goto = iPrinter.ifGoto(this);
+    iPrinter.printIndentString(0, if_goto);
+    decrIndent();
+    iPrinter.printIndentStringln(this.indent, iPrinter.getIfElse(if_num) + ":");
+    // else statement
+    incrIndent();
+    Result rf6 = n.f6.accept(this, null);
+    decrIndent();
+    iPrinter.printIndentStringln(this.indent, iPrinter.getIfEnd(if_num) + ":");
+    // increment if number
+    incrIfNum();
+    return (new Result(""));
+  }
+
+  /**
+   * f0 -> "while"
+   * f1 -> "("
+   * f2 -> Expression()
+   * f3 -> ")"
+   * f4 -> Statement()
+   */
+  public Result visit(WhileStatement n, Arguments argu) {
+    String while_top = iPrinter.getWhileTop(this.while_num);
+    iPrinter.printIndentStringln(this.indent, while_top + ":");
+    Result rf2 = n.f2.accept(this, argu); // expression
+    String while_cond = iPrinter.whileCondition(this, rf2.toString());
+    incrIndent();
+    n.f4.accept(this, argu);
+    decrIndent();
+    String while_end = iPrinter.getWhileEnd(this.while_num);
+    iPrinter.printIndentStringln(this.indent, while_end + ":");
+    incrWhileNum();
+    return (new Result(""));
+  }
+
+  /**
+   * f0 -> "System.out.println"
+   * f1 -> "("
+   * f2 -> Expression()
+   * f3 -> ")"
+   * f4 -> ";"
+   */
+  public Result visit(PrintStatement n, Argument argu) {
+    Result rf2 = n.f2.accept(this, argu);
+    String print_msg = iPrinter.print(this, rf2.toString());
+    return (new Result(""));
   }
 
   /**
@@ -371,6 +451,216 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   }
 
   /**
+   * f0 -> AndExpression()
+   *       | CompareExpression()
+   *       | PlusExpression()
+   *       | MinusExpression()
+   *       | TimesExpression()
+   *       | ArrayLookup()
+   *       | ArrayLength()
+   *       | MessageSend()
+   *       | PrimaryExpression()
+   */
+  public Result visit(Expression n, Arguments argu) {
+    int cur_tnum = this.tnum;
+    incrTNum();
+    return n.f0.accept(this, new Arguments(cur_tnum));
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "&&"
+   * f2 -> PrimaryExpression()
+   */
+  public Result visit(AndExpression n, Arguments argu) {
+    // use this t to store final condition
+    int cur_tnum = argu.getNum();
+    // eval first
+    Result rf0 = n.f0.accept(this, new Arguments(cur_tnum));
+    // first and condition jump
+    String foo = iPrinter.andLeft(this, rf0.toString());
+    iPrinter.printIndentString(0, foo);
+    // eval second
+    incrIndent();
+    Result rf2 = n.f2.accept(this, new Arguments(cur_tnum));
+    iPrinter.printIndentString(0, iPrinter.andGoto(this));
+    decrIndent();
+    // when first and second both false, set final t to zero
+    iPrinter.printIndentStringln(this.indent, iPrinter.getSSElse(ss_num) + ":");
+    incrIndent();
+    iPrinter.printIndentStringln(this.indent, iPrinter.getSSSetFalse(cur_tnum));
+    decrIndent();
+    // set ss_end label
+    iPrinter.printIndentStringln(this.indent, iPrinter.getSSEnd(ss_num));
+    return (new Result(iPrinter.getTemp(cur_tnum));
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "<"
+   * f2 -> PrimaryExpression()
+   */
+  public R visit(CompareExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "+"
+   * f2 -> PrimaryExpression()
+   */
+  public R visit(PlusExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "-"
+   * f2 -> PrimaryExpression()
+   */
+  public R visit(MinusExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "*"
+   * f2 -> PrimaryExpression()
+   */
+  public R visit(TimesExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "["
+   * f2 -> PrimaryExpression()
+   * f3 -> "]"
+   */
+  public R visit(ArrayLookup n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    n.f3.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "."
+   * f2 -> "length"
+   */
+  public R visit(ArrayLength n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> PrimaryExpression()
+   * f1 -> "."
+   * f2 -> Identifier()
+   * f3 -> "("
+   * f4 -> ( ExpressionList() )?
+   * f5 -> ")"
+   */
+  public R visit(MessageSend n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    n.f3.accept(this, argu);
+    n.f4.accept(this, argu);
+    n.f5.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> Expression()
+   * f1 -> ( ExpressionRest() )*
+   */
+  public R visit(ExpressionList n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> ","
+   * f1 -> Expression()
+   */
+  public R visit(ExpressionRest n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> IntegerLiteral()
+   *       | TrueLiteral()
+   *       | FalseLiteral()
+   *       | Identifier()
+   *       | ThisExpression()
+   *       | ArrayAllocationExpression()
+   *       | AllocationExpression()
+   *       | NotExpression()
+   *       | BracketExpression()
+   */
+  public R visit(PrimaryExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> <INTEGER_LITERAL>
+   */
+  public R visit(IntegerLiteral n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> "true"
+   */
+  public R visit(TrueLiteral n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> "false"
+   */
+  public R visit(FalseLiteral n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    return _ret;
+  }
+
+  /**
    * f0 -> "new"
    * f1 -> Identifier()
    * f2 -> "("
@@ -380,9 +670,8 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(AllocationExpression n, Arguments argu)
   {
     String cid = st.StringOfId(n.f1);
-    int chs = qt.getClazzHeapSize(cid);
-    String allocs = iPrinter.getObjectAllocString(this, cid,
-      indent, chs, t_num, null_num);
+    String allocs = iPrinter.getObjectAllocString(this, cid);
+    // TODO
     return null;
   }
 }

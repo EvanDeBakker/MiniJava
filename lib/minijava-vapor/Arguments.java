@@ -17,5 +17,19 @@
 // oh, a phantom class!
 public class Arguments
 {
-  public Arguments(){}
+
+  int tnum;
+  public Arguments()
+  {
+    tihs.tnum = 0;
+  }
+
+  public Arguments(int tnum)
+  {
+    this.tnum = tnum
+  }
+
+  public int getNum() {return this.tnum;}
+
+  public String toString() {return (new Integer(tnum)).toString();}
 }
