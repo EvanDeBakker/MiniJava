@@ -55,6 +55,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     this.cur_mid = null;
   }
 
+  // control indentation and label numbers
   public void incrIndent() {indent += 2;}
 
   public void decrIndent() {indent -= 2;}
@@ -431,24 +432,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     return (new Result(""));
   }
 
-  /**
-   * f0 -> <IDENTIFIER>
-   */
-  @Override
-  public Result visit(Identifier n, Arguments argu)
-  {
-    String vid = st.StringOfId(n);
-    if(st.isField(cur_cid, cur_mid, vid))
-    {
-      String ret = "";
-      int fpos = qt.getFieldPos(cur_cid, vid);
-      ret += "this+";
-      ret += (new Integer(fpos)).toString();
-      return (new Result(ret));
-    }
-    else
-      return (new Result(vid));
-  }
+
 
   /**
    * f0 -> AndExpression()
@@ -661,6 +645,51 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   }
 
   /**
+   * f0 -> <IDENTIFIER>
+   */
+  @Override
+  public Result visit(Identifier n, Arguments argu)
+  {
+    String vid = st.StringOfId(n);
+    if(st.isField(cur_cid, cur_mid, vid))
+    {
+      String ret = "";
+      int fpos = qt.getFieldPos(cur_cid, vid);
+      ret += "this+";
+      ret += (new Integer(fpos)).toString();
+      return (new Result(ret));
+    }
+    else
+      return (new Result(vid));
+  }
+
+  /**
+   * f0 -> "this"
+   */
+  public R visit(ThisExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> "new"
+   * f1 -> "int"
+   * f2 -> "["
+   * f3 -> Expression()
+   * f4 -> "]"
+   */
+  public R visit(ArrayAllocationExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    n.f3.accept(this, argu);
+    n.f4.accept(this, argu);
+    return _ret;
+  }
+
+  /**
    * f0 -> "new"
    * f1 -> Identifier()
    * f2 -> "("
@@ -674,5 +703,31 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     // TODO
     return null;
   }
+
+  /**
+   * f0 -> "!"
+   * f1 -> Expression()
+   */
+  public R visit(NotExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    return _ret;
+  }
+
+  /**
+   * f0 -> "("
+   * f1 -> Expression()
+   * f2 -> ")"
+   */
+  public R visit(BracketExpression n, A argu) {
+    R _ret=null;
+    n.f0.accept(this, argu);
+    n.f1.accept(this, argu);
+    n.f2.accept(this, argu);
+    return _ret;
+  }
+
+
 }
 
