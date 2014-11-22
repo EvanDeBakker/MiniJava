@@ -52,6 +52,8 @@ public class QueryTable
     this.heap_size = new HashMap<String, Integer>();
     this.iPrinter = new IndentationPrinter();
     this.buildDataSegmentsInfo();
+    this.buildFunctionLabelInfo();
+    this.buildFieldPosInfo();
     this.calculateClazzHeapAllocationSize(st);
   }
 
@@ -82,7 +84,12 @@ public class QueryTable
   public boolean calculateClazzHeapAllocationSize(SymbolTable st)
   {
     for(Clazz c : st.getClazzList())
-      heap_size.put(c.getId(), new Integer(st.calcHeapSize(c)));
+    {
+      String cid = c.getId();
+      DataSegment ds = this.getDS(cid);
+      int s = 4 * (1 + ds.getNumOfFields());
+      heap_size.put(c.getId(), new Integer(s));
+    }
     return true;
   }
 

@@ -83,6 +83,11 @@ public class DataSegment {
     return v.intValue();
   }
 
+  public int getNumOfFields()
+  {
+    return fvid_pos.ketSet().size();
+  }
+
   public String dumpDataSegment()
   {
     String ret = "";

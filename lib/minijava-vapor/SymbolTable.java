@@ -131,6 +131,20 @@ public class SymbolTable
     else
       return null;
   }
+
+  public String MethodReturnTypeToString(Type t)
+  {
+    assert(a != null);
+    Node at = a.f0.choice;
+    if(at instanceof Identifier)
+    {
+      String aid = ((Identifier)at).f0.toString();
+      return aid;
+    }
+    else
+      return null;
+  }
+
   public void printSingleMethod(int i, Meth m)
   {
     String output = "";
@@ -172,17 +186,9 @@ public class SymbolTable
   }
 
 
-  // heap allocation info
-  public boolean calculateClazzHeapAllocationSize()
-  {
-    for(Clazz c : this.clazz_list)
-      calcHeapSize(c);
-    return true;
-  }
-
   public int calcHeapSize(Clazz c)
   {
-    return c.getFieldList().size();
+    return (c.getFieldList().size() + 1)
   }
 
   public String StringOfId(Identifier id)

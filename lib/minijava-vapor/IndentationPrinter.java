@@ -71,31 +71,6 @@ public class IndentationPrinter
     System.out.println(ret);
   }
 
-  /*
-   * t.0 = HeapAllocZ(4)
-   * [t.0] = :vmt_Fac
-   * if t.0 goto :null1
-   *   Error("null pointer")
-   * null1:
-   */
-  public String getObjectAllocString
-  (VaporVisitor vv, String cid)
-  {
-    int heap_size = vv.qt.getClazzHeapSize(cid);
-    String ret = "";
-    String hs = (new Integer(heap_size)).toString();
-    String nn = getNull(vv.null_num);
-    String t = getTemp(vv.t_num);
-    ret += getIndentStringln(vv.indent, t + " = " + "HeapAllocZ(" + hs + ")");
-    ret += getIndentStringln(vv.indent, "[" + t + "] = :vmt_" + cid);
-    ret += getIndentStringln(vv.indent, "if " + t + " goto :" + nn);
-    ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
-    ret += getIndentStringln(vv.indent, nn + ":");
-    vv.incrTNum();
-    vv.incrNullNum();
-    return ret;
-  }
-
   public String ArrayAccess
   (VaporVisitor vv, String base)
   {
@@ -106,8 +81,6 @@ public class IndentationPrinter
     ret += getIndentStringln(vv.indent, "if " + t + " goto :" + nn);
     ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
     ret += getIndentStringln(vv.indent, nn + ":");
-    vv.incrTNum();
-    vv.incrNullNum();
     return ret;
   }
 
@@ -135,7 +108,6 @@ public class IndentationPrinter
     ret += getIndentStringln(vv.indent + 2, "Error(\"array index out of bounds\")");
     ret += getIndentStringln(vv.indent, bounds + ":");
     // do not increment tnum
-    vv.incrBoundsNum();
     return ret;
   }
 
@@ -145,7 +117,8 @@ public class IndentationPrinter
     String tprev = getTemp(vv.t_num - 1);
     String ret = "";
     ret += getIndentStringln(vv.indent, tcur + " = Muls(" + index + " 4)");
-    ret += getIndentStringln(vv.indent, tcur + " = Add(" + tcur + " " + tprev + ")");
+    ret += getIndentStringln(vv.indent, tcur + " = Add(" +
+                             tcur + " " + tprev + ")");
     return ret;
   }
 
@@ -154,7 +127,6 @@ public class IndentationPrinter
     String t = getTemp(tn);
     String ret = "";
     ret += getIndentStringln(vv.indent, "[" + t + "+4] = " + r);
-    vv.incrTNum();
     return ret;
   }
 
@@ -166,7 +138,7 @@ public class IndentationPrinter
 
   public String ifGoto(VaporVisitor vv)
   {
-    return getIndentStringln(vv.indent, "goto :" + getIfEnd(this.if_num));
+    return getIndentStringln(vv.indent, "goto :" + getIfEnd(vv.if_num));
   }
 
   public String getWhileTop(int n)
@@ -193,22 +165,134 @@ public class IndentationPrinter
   }
 
   // LinkedList.vapor 178 : if0 t.1 goto :ss1_else
-  public String andLeft(VaporVisitor vv, String s)
+  public String getAndLeft(VaporVisitor vv, String s)
   {
     String ret = "";
-    ret += getIndentStringln(vv.indent, "if0 " + s + " goto :" + getSSElse(vv.ss_num));
+    ret += getIndentStringln(vv.indent, "if0 " + s +
+                             " goto :" + getSSElse(vv.ss_num));
     return ret;
   }
 
-  public String andGoto(VaporVisit vv)
+  public String getAndGoto(VaporVisitor vv)
   {
     return getIndentStringln(vv.indent, "goto :" + getSSEnd(vv.ss_num));
   }
 
+  //t.0 = Sub(1 ret_val)
+  public String getAndAssign(VaporVisitor vv, int tnum, String res)
+  {
+    return getIndentStringln(vv.indent, getTemp(tnum) + " = " + res);
+  }
 
 
 
+  public String getLS(VaporVisitor vv, String l, String r)
+  {
+    String ret = "";
+    ret += getTemp(vv.t_num) + " = LtS(";
+    ret += l + " " + r + ")";
+    return getIndentStringln(vv.indent, ret);
+  }
 
+  public String getAdd(VaporVisitor vv, String l, String r)
+  {
+    String ret = "";
+    ret += getTemp(vv.t_num) + " = Add(";
+    ret += l + " " + r + ")";
+    return getIndentStringln(vv.indent, ret);
+  }
+
+  public String getMulti(VaporVisitor vv, String l, String r)
+  {
+    String ret = "";
+    ret += getTemp(vv.t_num) + " = MulS(";
+    ret += l + " " + r + ")";
+    return getIndentStringln(vv.indent, ret);
+  }
+
+  public String getArrayLookupNullCheck(VaporVisitor vv, String r)
+  {
+    String ret = "";
+    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = " + "[" + r + "]");
+    ret += getIndentStringln(vv.indent, "if " + getTemp(vv.t_num) + " goto :"
+                             + getNull(vv.null_num));
+    ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
+    ret += getIndentStringln(vv.indent, getNull(vv.null_num) + ":");
+    return ret;
+  }
+
+  public String getArrayLookupIndexInRange(VaporVisitor vv, String base, String i)
+  {
+    String ret = "";
+    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = [" +
+                             getTemp(vv.t_num - 1) + "]");
+    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = Lt(" + i
+                              + " " + getTemp(vv.t_num) + ")");
+    ret += getIndentStringln(vv.indent, "if " + getTemp(vv.t_num) + " goto :" +
+                             getBounds(vv.bound_num));
+    ret += getIndentStringln(vv.indent + 2, "Error(\"array index out of bounds\")"));
+    ret += getIndentStringln(vv.indent, getBounds(vv.bound_num) + ":");
+  }
+
+  public String getArrayLookupAccess(VaporVisitor vv, String base, String i)
+  {
+    String ret = "";
+    String t = getTemp(vv.t_num);
+    ret += getIndentStringln(vv.indent, t + " = MulS(" + i + " 4)");
+    ret += getIndentStringln(vv.indent, t + " = Add(" + t + " " + base + ")");
+    vv.incrTNum();
+    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = [" + t + "+4]");
+    return ret;
+  }
+
+  public String getArrayLength(VaporVisitor vv, String base)
+  {
+    String ret = "";
+    String t = getTemp(vv.t_num);
+    ret += getIndentStringln(vv.indent, t + " = [" + base + "]");
+    ret += getIndentStringln(vv.indent, "if " + t + " goto :" + getNull(vv.null_num));
+    ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
+    ret += getIndentStringln(vv.indent, getNull(vv.null_num) + ":");
+    vv.incrTNum();
+    String ret = getTemp(vv.t_num);
+    ret += getIndentStringln(vv.indent, ret + " = [" + ret + "]");
+    return ret;
+  }
+
+  public String getMessageSendCheckNull(VaporVisitor vv, String obj_addr)
+  {
+    String ret = "";
+    String null_label = getNull(vv.null_num);
+    ret += getIndentStringln(vv.indent, "if " + obj_addr + " goto :" + null_label);
+    ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
+    ret += getIndentStringln(vv.indent, null_label + ":");
+  }
+
+  public String getArrayAlloc(VaporVisitor vv, String sz)
+  {
+    String t = getTemp(vv.t_num);
+    ret += getIndentStringln(vv.indent, t + " = call :AllocArray(" + sz + ")");
+    return ret;
+  }
+
+  public String getObjectAlloc(VaporVisitor vv, String cid)
+  {
+    int s = qt.getClazzHeapSize(cid);
+    String sz = (new Integer(s)).size();
+    String ret = "";
+    String t = getTemp(vv.t_num);
+    ret += getIndentStringln(vv.indent, t + " = HeapAllocZ(" + sz + ")";
+    ret += getIndentStringln(vv.indent, "[" + t + "] = :vmt_" + cid);
+    return ret;
+  }
+
+  public String getNot(VaporVisitor vv, String r)
+  {
+    String t = getTemp(vv.t_num);
+    String ret = "";
+    ret += getIndentStringln(vv.indent, t + " = Sub(1 " + r + ")");
+    return ret;
+  }
 
   public String getTemp(int n)
   {
