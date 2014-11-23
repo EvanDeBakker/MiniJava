@@ -91,6 +91,17 @@ public class SymbolTable
     return null;
   }
 
+  public Type getLocalVarType(String cid, String mid, String vid)
+  {
+    Meth m = getMeth(cid, mid);
+    assert(m != null);
+    Var v = m.getLocalVar(vid);
+    if(v == null)
+      v = m.getParameter(vid);
+    assert(v != null);
+    return v.getType();
+  }
+
   // used when looking for method in the target class 
   // and its parent class
   public Var getCField(String cid, String vid)
