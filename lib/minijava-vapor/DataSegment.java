@@ -85,7 +85,7 @@ public class DataSegment {
 
   public int getNumOfFields()
   {
-    return fvid_pos.ketSet().size();
+    return this.fvid_pos.keySet().size();
   }
 
   public String dumpDataSegment()

@@ -21,12 +21,12 @@ public class Arguments
   int tnum;
   public Arguments()
   {
-    tihs.tnum = 0;
+    this.tnum = 0;
   }
 
   public Arguments(int tnum)
   {
-    this.tnum = tnum
+    this.tnum = tnum;
   }
 
   public int getNum() {return this.tnum;}

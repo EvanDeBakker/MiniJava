@@ -22,6 +22,7 @@ public class SymbolTable
   public HashMap<String, Clazz> hm;
   public ArrayList<Clazz> clazz_list;
   public Quit quit;
+  public String main_cid;
 
 
   public SymbolTable()
@@ -29,6 +30,7 @@ public class SymbolTable
     hm = new HashMap<String, Clazz>();
     quit = new Quit();
     clazz_list = new ArrayList<Clazz>();
+    main_cid = null;
   }
 
   public boolean containsClazz(String id)
@@ -48,6 +50,18 @@ public class SymbolTable
       return true;
     }
   }
+
+  public boolean setMainCid(String m)
+  {
+    this.main_cid = m;
+    return true;
+  }
+
+  public String getMainCid()
+  {
+    return this.main_cid;
+  }
+
 
   public Clazz getClazz(String id)
   {
@@ -132,7 +146,7 @@ public class SymbolTable
       return null;
   }
 
-  public String MethodReturnTypeToString(Type t)
+  public String MethodReturnTypeToString(Type a)
   {
     assert(a != null);
     Node at = a.f0.choice;
@@ -188,7 +202,7 @@ public class SymbolTable
 
   public int calcHeapSize(Clazz c)
   {
-    return (c.getFieldList().size() + 1)
+    return (c.getFieldList().size() + 1);
   }
 
   public String StringOfId(Identifier id)

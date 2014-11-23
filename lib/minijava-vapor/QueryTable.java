@@ -52,8 +52,6 @@ public class QueryTable
     this.heap_size = new HashMap<String, Integer>();
     this.iPrinter = new IndentationPrinter();
     this.buildDataSegmentsInfo();
-    this.buildFunctionLabelInfo();
-    this.buildFieldPosInfo();
     this.calculateClazzHeapAllocationSize(st);
   }
 
@@ -77,7 +75,10 @@ public class QueryTable
   {
     String ret = "\n";
     for(DataSegment ds : this.dss)
-      ret += ds.dumpDataSegment();
+    {
+      if(!ds.getName().equals(st.getMainCid()))
+        ret += ds.dumpDataSegment();
+    }
     return ret;
   }
 

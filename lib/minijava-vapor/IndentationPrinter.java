@@ -63,12 +63,13 @@ public class IndentationPrinter
     System.out.println("");
   }
 
-  public void printLog(string msg)
+  public void printLog(String msg)
   {
     String ret = "-----------------------------";
     ret += msg;
     ret += "-----------------------------";
     System.out.println(ret);
+    System.exit(1);
   }
 
   public String ArrayAccess
@@ -100,7 +101,7 @@ public class IndentationPrinter
   {
     String tcur = getTemp(vv.t_num);
     String tprev = getTemp(vv.t_num - 1);
-    String bounds = getBound(vv.bounds_num);
+    String bounds = getBounds(vv.bounds_num);
     String ret = "";
     ret += getIndentStringln(vv.indent, tcur + " = [" + tprev + "]");
     ret += getIndentStringln(vv.indent, tcur + " = Lt(" + index + " " + tcur + ")");
@@ -130,7 +131,7 @@ public class IndentationPrinter
     return ret;
   }
 
-  public String ifCondition0(VaporVisitor, vv, String cond)
+  public String ifCondition0(VaporVisitor vv, String cond)
   {
     String s = "if0 " + cond + " goto :" + getIfElse(vv.if_num);
     return getIndentStringln(vv.indent, s);
@@ -155,13 +156,13 @@ public class IndentationPrinter
   {
     String ret = "";
     ret += getIndentStringln(vv.indent,
-      "if0 " + cond + " goto :" + getWhileEnd(vv.while_num);
+      "if0 " + cond + " goto :" + getWhileEnd(vv.while_num));
     return ret;
   }
 
   public String print(VaporVisitor vv, String s)
   {
-    return getIndentStringln(vv.indent, "PrintIntS(" + s ")");
+    return getIndentStringln(vv.indent, "PrintIntS(" + s + ")");
   }
 
   // LinkedList.vapor 178 : if0 t.1 goto :ss1_else
@@ -184,8 +185,6 @@ public class IndentationPrinter
     return getIndentStringln(vv.indent, getTemp(tnum) + " = " + res);
   }
 
-
-
   public String getLS(VaporVisitor vv, String l, String r)
   {
     String ret = "";
@@ -198,6 +197,14 @@ public class IndentationPrinter
   {
     String ret = "";
     ret += getTemp(vv.t_num) + " = Add(";
+    ret += l + " " + r + ")";
+    return getIndentStringln(vv.indent, ret);
+  }
+
+  public String getSub(VaporVisitor vv, String l, String r)
+  {
+    String ret = "";
+    ret += getTemp(vv.t_num) + " = Sub(";
     ret += l + " " + r + ")";
     return getIndentStringln(vv.indent, ret);
   }
@@ -229,9 +236,10 @@ public class IndentationPrinter
     ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = Lt(" + i
                               + " " + getTemp(vv.t_num) + ")");
     ret += getIndentStringln(vv.indent, "if " + getTemp(vv.t_num) + " goto :" +
-                             getBounds(vv.bound_num));
-    ret += getIndentStringln(vv.indent + 2, "Error(\"array index out of bounds\")"));
-    ret += getIndentStringln(vv.indent, getBounds(vv.bound_num) + ":");
+                             getBounds(vv.bounds_num));
+    ret += getIndentStringln(vv.indent + 2, "Error(\"array index out of bounds\")");
+    ret += getIndentStringln(vv.indent, getBounds(vv.bounds_num) + ":");
+    return ret;
   }
 
   public String getArrayLookupAccess(VaporVisitor vv, String base, String i)
@@ -254,8 +262,8 @@ public class IndentationPrinter
     ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
     ret += getIndentStringln(vv.indent, getNull(vv.null_num) + ":");
     vv.incrTNum();
-    String ret = getTemp(vv.t_num);
-    ret += getIndentStringln(vv.indent, ret + " = [" + ret + "]");
+    String tnext = getTemp(vv.t_num);
+    ret += getIndentStringln(vv.indent, tnext + " = [" + t + "]");
     return ret;
   }
 
@@ -266,22 +274,44 @@ public class IndentationPrinter
     ret += getIndentStringln(vv.indent, "if " + obj_addr + " goto :" + null_label);
     ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
     ret += getIndentStringln(vv.indent, null_label + ":");
+    return ret;
+  }
+
+  // t.3 = call t.1(this aux01 t.2)
+  // aux02 = call t.5(other)
+  public String getMessageSendCall(VaporVisitor vv, String on, int mp, String oa)
+  {
+    String t = getTemp(vv.t_num);
+    String ret = "";
+    String pos = (new Integer(mp)).toString();
+    ret += getIndentStringln(vv.indent, t + " = [" + oa + "]");
+    ret += getIndentStringln(vv.indent, t + " = [" + t + "+" + pos + "]");
+    vv.incrTNum();
+    String tnext = getTemp(vv.t_num);
+    ret += getIndentString(vv.indent, tnext + " = call " + t + "(" + oa); // possible bugs!
+    for(Result r : vv.exp_res_l)
+    {
+      ret += " " + r.toString();
+    }
+    ret += ")\n";
+    return ret;
   }
 
   public String getArrayAlloc(VaporVisitor vv, String sz)
   {
     String t = getTemp(vv.t_num);
+    String ret = "";
     ret += getIndentStringln(vv.indent, t + " = call :AllocArray(" + sz + ")");
     return ret;
   }
 
   public String getObjectAlloc(VaporVisitor vv, String cid)
   {
-    int s = qt.getClazzHeapSize(cid);
-    String sz = (new Integer(s)).size();
+    int s = vv.qt.getClazzHeapSize(cid);
+    String sz = (new Integer(s)).toString();
     String ret = "";
     String t = getTemp(vv.t_num);
-    ret += getIndentStringln(vv.indent, t + " = HeapAllocZ(" + sz + ")";
+    ret += getIndentStringln(vv.indent, t + " = HeapAllocZ(" + sz + ")");
     ret += getIndentStringln(vv.indent, "[" + t + "] = :vmt_" + cid);
     return ret;
   }
@@ -291,6 +321,13 @@ public class IndentationPrinter
     String t = getTemp(vv.t_num);
     String ret = "";
     ret += getIndentStringln(vv.indent, t + " = Sub(1 " + r + ")");
+    return ret;
+  }
+
+  public String getRet(VaporVisitor vv, String r)
+  {
+    String ret = "";
+    ret += getIndentStringln(vv.indent, "ret " + r);
     return ret;
   }
 
@@ -326,15 +363,12 @@ public class IndentationPrinter
 
   public String getSSEnd(int n)
   {
-    return "ss" + (new Intger(n)).toString() + "_end";
+    return "ss" + (new Integer(n)).toString() + "_end";
   }
 
-  public Strin getSSSetFalse(int n)
+  public String getSSSetFalse(int n)
   {
     return getTemp(n) + " = 0";
   }
-
-
-
 
 }

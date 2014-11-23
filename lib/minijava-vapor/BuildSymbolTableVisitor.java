@@ -64,6 +64,7 @@ public class BuildSymbolTableVisitor extends DepthFirstVisitor
     if(cur_cid != null || cur_mid != null)
       quit.q();
     String cid = n.f1.f0.toString();
+    st.setMainCid(cid);
     // set states
     cur_cid = cid;
     if(!st.addClazz(cid, null))

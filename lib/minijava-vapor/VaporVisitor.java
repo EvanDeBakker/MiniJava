@@ -54,7 +54,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     this.null_num = 1;
     this.bounds_num = 1;
     this.ss_num = 1;
-    this.indent = 1;
+    this.indent = 0;
     this.cur_cid = null;
     this.cur_mid = null;
     this.cur_oid = null;
@@ -92,17 +92,17 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   }
 
   // safely return null because it will not be used
-  public Result visit(NodeList n, A argu) {
+  public Result visit(NodeList n, Arguments argu) {
     return null;
   }
 
   public Result visit(NodeListOptional n, Arguments argu) {
     if (n.present())
     {
-      int _count=0;
       for (Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
         Result r = e.nextElement().accept(this,argu);
-        _count++;
+        if(start_collecting)
+          exp_res_l.add(r);
       }
       return null;
     }
@@ -110,15 +110,15 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
       return null;
   }
 
-  public R visit(NodeOptional n, A argu) {
+  public Result visit(NodeOptional n, Arguments argu) {
     if ( n.present() )
       return n.node.accept(this,argu);
     else
       return null;
   }
 
-  public R visit(NodeSequence n, A argu) {
-    R _ret=null;
+  public Result visit(NodeSequence n, Arguments argu) {
+    Result _ret=null;
     int _count=0;
     for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
       e.nextElement().accept(this,argu);
@@ -127,7 +127,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     return _ret;
   }
 
-  public R visit(NodeToken n, A argu) { return null; }
+  public Result visit(NodeToken n, Arguments argu) { return null; }
 
   /**
    * f0 -> MainClass()
@@ -166,16 +166,17 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   @Override
   public Result visit(MainClass n, Arguments argu)
   {
-    iPrinter.printIndentStringln(indent, "func Main()");
+    iPrinter.printIndentStringln(this.indent, "func Main()");
     incrIndent();
     String cid = st.StringOfId(n.f1);
     String mid = n.f6.toString();
     cur_cid = cid;
     cur_mid = mid;
-    n.f14.accept(this, argu); // node list optional
+    //n.f14.accept(this, argu); // node list optional
     n.f15.accept(this, argu); // node list optional
     cur_cid = null;
     cur_mid = null;
+    iPrinter.printIndentStringln(this.indent, "ret\n");
     decrIndent();
     resetTNum();
     return new Result("");
@@ -259,7 +260,8 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     incrIndent();
     n.f8.accept(this, argu);
     Result ret_res = n.f10.accept(this, argu);
-    // TODO, print ret instruction
+    String ret_s = iPrinter.getRet(this, ret_res.toString());
+    iPrinter.printIndentString(0, ret_s);
     cur_mid = null;
     decrIndent();
     resetTNum();
@@ -422,12 +424,12 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(IfStatement n, Arguments argu) {
     // condition
     Result rf2 = n.f2.accept(this, argu); // expression
-    String if_cond = iPrinter.IfCondition0(this, rf2.toString());
+    String if_cond = iPrinter.ifCondition0(this, rf2.toString());
     iPrinter.printIndentString(0, if_cond);
     incrIndent();
     // statement
     Result rf4 = n.f4.accept(this, argu);
-    Strint if_goto = iPrinter.ifGoto(this);
+    String if_goto = iPrinter.ifGoto(this);
     iPrinter.printIndentString(0, if_goto);
     decrIndent();
     iPrinter.printIndentStringln(this.indent, iPrinter.getIfElse(if_num) + ":");
@@ -470,9 +472,10 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    * f3 -> ")"
    * f4 -> ";"
    */
-  public Result visit(PrintStatement n, Argument argu) {
+  public Result visit(PrintStatement n, Arguments argu) {
     Result rf2 = n.f2.accept(this, argu);
     String print_msg = iPrinter.print(this, rf2.toString());
+    iPrinter.printIndentString(0, print_msg);
     return (new Result(""));
   }
 
@@ -521,7 +524,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     // set ss_end label
     iPrinter.printIndentStringln(this.indent, iPrinter.getSSEnd(ss_num));
     // final result stored in t.cur_tnum
-    return (new Result(iPrinter.getTemp(cur_tnum));
+    return (new Result(iPrinter.getTemp(cur_tnum)));
   }
 
   /**
@@ -547,7 +550,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(PlusExpression n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
     Result rf2 = n.f2.accept(this, argu);
-    String add_s = iPrinter.getAdd(this, rf0.toString, rf1.toString());
+    String add_s = iPrinter.getAdd(this, rf0.toString(), rf2.toString());
     iPrinter.printIndentString(0, add_s);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
     incrTNum();
@@ -561,9 +564,9 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    */
   public Result visit(MinusExpression n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
-    Result rf2 = n.f1.accept(this, argu);
+    Result rf2 = n.f2.accept(this, argu);
     String sub_s = iPrinter.getSub(this, rf0.toString(), rf2.toString());
-    iPrinter.printIndentSring(0, sub_s);
+    iPrinter.printIndentString(0, sub_s);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
     incrTNum();
     return ret;
@@ -576,9 +579,9 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    */
   public Result visit(TimesExpression n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
-    Result rf2 = n.f1.accept(this, argu);
+    Result rf2 = n.f2.accept(this, argu);
     String mult_s = iPrinter.getMulti(this, rf0.toString(), rf2.toString());
-    iPrinter.printIndentSring(0, mult_s);
+    iPrinter.printIndentString(0, mult_s);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
     incrTNum();
     return ret;
@@ -648,9 +651,12 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(MessageSend n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
     String obj_addr = rf0.toString();
-    // rf0 is the object address, first need to check null
-    String check_null = iPrinter.getMessageSendCheckNull(this, obj_addr);
-    iPrinter.printIndentString(0, check_null);
+    // rf0 is the object address other than this, first need to check null
+    if(!cur_oid.equals("this"))
+    {
+      String check_null = iPrinter.getMessageSendCheckNull(this, obj_addr);
+      iPrinter.printIndentString(0, check_null);
+    }
     String method_name = st.StringOfId(n.f2);
     assert(cur_oid != null);
     String query_class_name = cur_oid;
@@ -665,7 +671,9 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     turn_on_collecting();
     n.f4.accept(this, argu);
     // prepare method call
-    String method_call = iPrinter.getMethodCall(this, method_pos, obj_addr);
+    String method_call = iPrinter.getMessageSendCall(this,
+      cur_oid, method_pos, obj_addr);
+    turn_off_collecting();
     iPrinter.printIndentString(0, method_call);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
     incrTNum();
@@ -711,7 +719,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    * f0 -> <INTEGER_LITERAL>
    */
   public Result visit(IntegerLiteral n, Arguments argu) {
-    String num = n.f0.f0.toString();
+    String num = n.f0.toString();
     return (new Result(num));
   }
 
@@ -785,8 +793,10 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   @Override
   public Result visit(AllocationExpression n, Arguments argu)
   {
-    String cid = st.StringOfId(n.f1);
-    String allocs = iPrinter.getObjectAlloc(this, cid);
+    String oid = st.StringOfId(n.f1);
+    this.cur_oid = oid;
+    String allocs = iPrinter.getObjectAlloc(this, oid);
+    iPrinter.printIndentString(0, allocs);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
     incrTNum();
     return ret;
@@ -798,7 +808,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    */
   public Result visit(NotExpression n, Arguments argu) {
     Result rf1 = n.f1.accept(this, argu);
-    String notstr = getNot(this, rf1.toString());
+    String notstr = iPrinter.getNot(this, rf1.toString());
     iPrinter.printIndentString(0, notstr);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
     incrTNum();
@@ -813,7 +823,5 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(BracketExpression n, Arguments argu) {
     return n.f1.accept(this, argu);
   }
-
-
 }
 
