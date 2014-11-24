@@ -227,5 +227,4 @@ public class SymbolTable
     Meth m = c.getMeth(mid);
     return !m.containsLocalVariableOrParameter(vid);
   }
-
 }

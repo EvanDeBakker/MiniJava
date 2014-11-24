@@ -25,17 +25,20 @@ public class DataSegment {
   // map mid to position number
   public HashMap<String, Integer> mid_pos;
   // map field to position number
-  public HashMap<String, Integer> fvid_pos;
-
+  public ArrayList<String> fvid_pos;
+  // seperation mark
+  public HashMap<String, Integer> sep_mark;
+  // printer
   public IndentationPrinter iPrinter;
 
   public DataSegment(boolean ic, String DS_name) {
     this.isConst = ic;
     this.f_pos = 0;
     this.DS_name = DS_name;
-    f_list = new ArrayList<String>();
-    mid_pos = new HashMap<String, Integer>();
-    fvid_pos = new HashMap<String, Integer>();
+    this.f_list = new ArrayList<String>();
+    this.mid_pos = new HashMap<String, Integer>();
+    this.fvid_pos = new ArrayList<String>();
+    this.sep_mark = new HashMap<String, Integer>();
     this.iPrinter = new IndentationPrinter();
   }
 
@@ -70,22 +73,36 @@ public class DataSegment {
   }
 
   // field pos
-  public boolean putFieldPos(String vid, int pos)
+  public boolean putFieldPos(String vid)
   {
-    fvid_pos.put(vid, new Integer(pos));
+    fvid_pos.add(vid);
+    return true;
+  }
+
+  public boolean putSeparationMark(String cid, int pos)
+  {
+    Integer mark = new Integer(pos);
+    sep_mark.put(cid, mark);
     return true;
   }
 
   public int getFieldPos(String vid)
   {
-    Integer v = fvid_pos.get(vid);
-    assert(v != null);
-    return v.intValue();
+    //Integer v = sep_mark.get(cid);
+    //assert(v != null);
+    //int sep = v.intValue();
+    for(int i = fvid_pos.size() - 1; i >= 0; i--)
+    {
+      if(fvid_pos.get(i).equals(vid))
+        return i;
+    }
+    assert(false);
+    return -1;
   }
 
   public int getNumOfFields()
   {
-    return this.fvid_pos.keySet().size();
+    return this.fvid_pos.size();
   }
 
   public String dumpDataSegment()

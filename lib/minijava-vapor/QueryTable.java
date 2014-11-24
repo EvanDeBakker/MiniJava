@@ -146,7 +146,6 @@ public class QueryTable
   {
     for(Clazz c: st.getClazzList())
     {
-      int pos = 0;
       DataSegment ds = this.getDS(c.getId());
       ArrayList<Clazz> cl = new ArrayList<Clazz>();
       Clazz cur_c = c;
@@ -160,25 +159,15 @@ public class QueryTable
           cur_c = st.getClazz(pid);
       }
       Collections.reverse(cl);
+      int pos = 0;
       for(int i = 0; i < cl.size(); i++)
       {
         for(Var parameter1 : cl.get(i).getFieldList())
         {
-          boolean overriden = false;
-          for(int j = i + 1; j < cl.size(); j++)
-          {
-            for(Var parameter2 : cl.get(j).getFieldList())
-            {
-              if(parameter1.getId().equals(parameter2.getId()))
-                overriden = true;
-            }
-          }
-          if(!overriden)
-          {
-            ds.putFieldPos(parameter1.getId(), pos);
-            pos++;
-          }
+          ds.putFieldPos(parameter1.getId());
+          pos++;
         }
+        ds.putSeparationMark(cl.get(i).getId(), pos);
       }
     }
     return true;

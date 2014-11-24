@@ -96,21 +96,20 @@ public class IndentationPrinter
     String ret = "";
     ret += getIndentStringln(vv.indent, tcur + " = [" + base + "]");
     ret += getIndentStringln(vv.indent, tcur + " = Lt(" + index + " " + tcur + ")");
-    ret += getIndentStringln(vv.indent, "if " + tcur + " goto: " + bounds);
+    ret += getIndentStringln(vv.indent, "if " + tcur + " goto :" + bounds);
     ret += getIndentStringln(vv.indent + 2, "Error(\"array index out of bounds\")");
     ret += getIndentStringln(vv.indent, bounds + ":");
     // do not increment tnum
     return ret;
   }
 
-  public String ArrayElementAccess(VaporVisitor vv, String index)
+  public String ArrayElementAccess(VaporVisitor vv, String index, String base)
   {
     String tcur = getTemp(vv.t_num);
-    String tprev = getTemp(vv.t_num - 1);
     String ret = "";
-    ret += getIndentStringln(vv.indent, tcur + " = Muls(" + index + " 4)");
+    ret += getIndentStringln(vv.indent, tcur + " = MulS(" + index + " 4)");
     ret += getIndentStringln(vv.indent, tcur + " = Add(" +
-      tcur + " " + tprev + ")");
+      tcur + " " + base + ")");
     return ret;
   }
 
@@ -231,12 +230,11 @@ public class IndentationPrinter
     return getIndentStringln(vv.indent, ret);
   }
 
-  public String getArrayLookupNullCheck(VaporVisitor vv, String r)
+  public String getArrayLookupNullCheck(VaporVisitor vv, String base)
   {
     String ret = "";
-    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = " + "[" + r + "]");
-    ret += getIndentStringln(vv.indent, "if " + getTemp(vv.t_num) + " goto :"
-                             + getNull(vv.null_num));
+    String n = getNull(vv.null_num);
+    ret += getIndentStringln(vv.indent, "if " + base + " goto :" + n);
     ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
     ret += getIndentStringln(vv.indent, getNull(vv.null_num) + ":");
     return ret;
@@ -245,14 +243,13 @@ public class IndentationPrinter
   public String getArrayLookupIndexInRange(VaporVisitor vv, String base, String i)
   {
     String ret = "";
-    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = [" +
-                             getTemp(vv.t_num - 1) + "]");
-    ret += getIndentStringln(vv.indent, getTemp(vv.t_num) + " = Lt(" + i
-                              + " " + getTemp(vv.t_num) + ")");
-    ret += getIndentStringln(vv.indent, "if " + getTemp(vv.t_num) + " goto :" +
-                             getBounds(vv.bounds_num));
+    String t = getTemp(vv.t_num);
+    String b = getBounds(vv.bounds_num);
+    ret += getIndentStringln(vv.indent, t + " = [" + base + "]");
+    ret += getIndentStringln(vv.indent, t + " = Lt(" + i + " " + t + ")");
+    ret += getIndentStringln(vv.indent, "if " + t + " goto :" + b);
     ret += getIndentStringln(vv.indent + 2, "Error(\"array index out of bounds\")");
-    ret += getIndentStringln(vv.indent, getBounds(vv.bounds_num) + ":");
+    ret += getIndentStringln(vv.indent, b + ":");
     return ret;
   }
 

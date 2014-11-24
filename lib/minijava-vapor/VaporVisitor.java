@@ -105,7 +105,12 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
       for (Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
         Result r = e.nextElement().accept(this,argu);
         if(start_collecting)
-          exp_res_l.add(r);
+        {
+          String t = iPrinter.getTemp(this.t_num);
+          incrTNum();
+          iPrinter.printIndentStringln(this.indent, t + " = " + r.toString());
+          exp_res_l.add(new Result(t));
+        }
       }
       return null;
     }
@@ -143,6 +148,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     n.f0.accept(this, argu);
     n.f1.accept(this, argu);
     n.f2.accept(this, argu);
+    iPrinter.printIndentString(0, "\n" + iPrinter.BasicArrayAlloc());
     return (new Result(""));
   }
 
@@ -411,27 +417,40 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    */
   public Result visit(ArrayAssignmentStatement n, Arguments argu)
   {
+    // ------------------- f0 ----------------------
     // get array base
     Result rf0 = n.f0.accept(this, argu);
-    String base = rf0.toString();
+    String base = rf0.toString(); // raw base [this + 4]
     String array_access = iPrinter.ArrayAccess(this, base);
+    iPrinter.printIndentString(0, array_access);
+    // base now stored in a variable, which is t.1
+    base = iPrinter.getTemp(this.t_num);
     incrNullNum();
+    incrTNum();
     // get index
+    // ------------------- f2 ----------------------
     Result rf2 = n.f2.accept(this, argu);
     String index = rf2.toString();
     String intert = iPrinter.getTemp(this.t_num);
-    iPrinter.printIndentStringln(this.indent, intert + " = " + index);
     incrTNum();
+    iPrinter.printIndentStringln(this.indent, intert + " = " + index);
+
     String check_index_range = iPrinter.CheckIndexInRange(this, base, intert);
+    iPrinter.printIndentString(0, check_index_range);
     incrBoundsNum();
-    String element_access = iPrinter.ArrayElementAccess(this, intert);
+
+    String element_access = iPrinter.ArrayElementAccess(this, intert, base);
+    iPrinter.printIndentString(0, element_access);
     // store current t_num
     int e_addr_num = this.t_num;
+    incrTNum();
+    // ------------------- f5 ----------------------
     // get right-hand expression
-    Result rf5 = n.f1.accept(this, argu);
-    String assign = iPrinter.ArrayAssignment(this, e_addr_num, rf5.toString());
-    iPrinter.printIndentString(0, check_index_range);
-    iPrinter.printIndentString(0, element_access);
+    Result rf5 = n.f5.accept(this, argu);
+    String intert2 = iPrinter.getTemp(this.t_num);
+    iPrinter.printIndentStringln(this.indent, intert2 + " = " + rf5.toString());
+    incrTNum();
+    String assign = iPrinter.ArrayAssignment(this, e_addr_num, intert2);
     iPrinter.printIndentString(0, assign);
     return (new Result(""));
   }
@@ -726,7 +745,6 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     iPrinter.printIndentStringln(this.indent, base + " = " + rf0.toString());
     incrTNum();
     String ar_null_check = iPrinter.getArrayLookupNullCheck(this, base); // should return this+4
-    incrTNum();
     incrNullNum();
     iPrinter.printIndentString(0, ar_null_check);
     Result rf2 = n.f2.accept(this, argu);
@@ -735,6 +753,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     incrTNum();
     String ar_inrange_check = iPrinter.getArrayLookupIndexInRange
                               (this, base, index);
+    incrBoundsNum();
     // do not increment tnum here
     iPrinter.printIndentString(0, ar_inrange_check);
     String ar_access = iPrinter.getArrayLookupAccess(this, base, index);
