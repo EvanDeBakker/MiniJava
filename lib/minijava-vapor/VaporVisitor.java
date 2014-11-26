@@ -181,7 +181,6 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     String mid = n.f6.toString();
     cur_cid = cid;
     cur_mid = mid;
-    //n.f14.accept(this, argu); // node list optional
     n.f15.accept(this, argu); // node list optional
     cur_cid = null;
     cur_mid = null;
@@ -265,6 +264,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     cur_mid = st.StringOfId(n.f2);
     String m = "func " + cur_cid + "." +  cur_mid + "(this";
     iPrinter.printIndentString(0, m);
+    // print out parameters
     n.f4.accept(this, argu);
     iPrinter.printIndentStringln(0, ")");
     incrIndent();
@@ -420,10 +420,10 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     // ------------------- f0 ----------------------
     // get array base
     Result rf0 = n.f0.accept(this, argu);
-    String base = rf0.toString(); // raw base [this + 4]
+    String base = rf0.toString(); // raw base in format like [this + 4] or var
     String array_access = iPrinter.ArrayAccess(this, base);
     iPrinter.printIndentString(0, array_access);
-    // base now stored in a variable, which is t.1
+    // base now stored in a variable, like t.1
     base = iPrinter.getTemp(this.t_num);
     incrNullNum();
     incrTNum();
@@ -434,18 +434,19 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     String intert = iPrinter.getTemp(this.t_num);
     incrTNum();
     iPrinter.printIndentStringln(this.indent, intert + " = " + index);
-
+    // intert stores the index, like t.2
+    // base stores the array base address, like t.1
+    // now we can start check if index is in range
     String check_index_range = iPrinter.CheckIndexInRange(this, base, intert);
     iPrinter.printIndentString(0, check_index_range);
     incrBoundsNum();
-
     String element_access = iPrinter.ArrayElementAccess(this, intert, base);
     iPrinter.printIndentString(0, element_access);
-    // store current t_num
+    // current t_num is the address of the array element that will be assigned
     int e_addr_num = this.t_num;
     incrTNum();
     // ------------------- f5 ----------------------
-    // get right-hand expression
+    // get right-hand expression and store it in an intermediate t
     Result rf5 = n.f5.accept(this, argu);
     String intert2 = iPrinter.getTemp(this.t_num);
     iPrinter.printIndentStringln(this.indent, intert2 + " = " + rf5.toString());
@@ -480,21 +481,25 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     ret num_aux
    */
   public Result visit(IfStatement n, Arguments argu) {
-    // condition
+    // evaluate expression and store it in intert
     Result rf2 = n.f2.accept(this, argu); // expression
     String intert = iPrinter.getTemp(this.t_num);
     iPrinter.printIndentStringln(this.indent, intert + " = " + rf2.toString());
     incrTNum();
+    // remember the current if_num
     int cur_if_num = this.if_num;
     incrIfNum();
     String if_cond = iPrinter.ifCondition0(this, intert, cur_if_num);
     iPrinter.printIndentString(0, if_cond);
     incrIndent();
-    // statement
+    // print statement when true
     Result rf4 = n.f4.accept(this, argu);
+    // print goto :if_end
     String if_goto = iPrinter.ifGoto(this, cur_if_num);
     iPrinter.printIndentString(0, if_goto);
     decrIndent();
+    // print statement when false
+    // print if_else
     iPrinter.printIndentStringln(this.indent, iPrinter.getIfElse(cur_if_num) + ":");
     // else statement
     incrIndent();
@@ -531,11 +536,13 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    */
   public Result visit(WhileStatement n, Arguments argu)
   {
+    // remember current while_num
     int cur_while_num = this.while_num;
     incrWhileNum();
     String while_top = iPrinter.getWhileTop(cur_while_num);
     iPrinter.printIndentStringln(this.indent, while_top + ":");
-    Result rf2 = n.f2.accept(this, argu); // expression
+    // evaluate condition expression and store it in an intermediate t
+    Result rf2 = n.f2.accept(this, argu);
     String intert = iPrinter.getTemp(this.t_num);
     iPrinter.printIndentStringln(this.indent, intert + " = " +
       rf2.toString());
@@ -621,9 +628,11 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     String assign_second = iPrinter.getAndAssign(this, cur_tnum, rf2.toString());
     // print second assign
     iPrinter.printIndentString(0, assign_second);
+    // print goto ss_end label
     iPrinter.printIndentString(0, iPrinter.getAndGoto(this, cur_ssnum));
     decrIndent();
     // when first and second both false, set final t to zero
+    // print ss_else label
     iPrinter.printIndentStringln(this.indent, iPrinter.getSSElse(cur_ssnum) + ":");
     incrIndent();
     iPrinter.printIndentStringln(this.indent, iPrinter.getSSSetFalse(cur_tnum));
@@ -642,12 +651,15 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(CompareExpression n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
     Result rf2 = n.f2.accept(this, argu);
+    // store first eval result in t
     String intert1 = iPrinter.getTemp(this.t_num);
     iPrinter.printIndentStringln(this.indent, intert1 + " = " + rf0.toString());
     incrTNum();
+    // store second eval result in t
     String intert2 = iPrinter.getTemp(this.t_num);
     iPrinter.printIndentStringln(this.indent, intert2 + " = " + rf2.toString());
     incrTNum();
+    // print comp instruction
     String comp_s = iPrinter.getLS(this, intert1, intert2);
     iPrinter.printIndentString(0, comp_s);
     Result ret = new Result(iPrinter.getTemp(this.t_num));
@@ -789,6 +801,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    * f4 -> ( ExpressionList() )?
    * f5 -> ")"
    */
+  // lots of hacks done here
   public Result visit(MessageSend n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
     String obj_addr = rf0.toString();
@@ -811,6 +824,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
     int method_pos = qt.getFunctionLabelPos(query_class_name, method_name);
     Type rtype = st.getMeth(query_class_name, method_name).getType();
     String rtstr = st.MethodReturnTypeToString(rtype);
+    // if the return type is an object, we remember it
     if(rtstr != null)
       cur_oid = rtstr;
     // start collecting expression list's results
@@ -830,6 +844,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
    * f0 -> Expression()
    * f1 -> ( ExpressionRest() )*
    */
+  // will only be used in MessageSend
   public Result visit(ExpressionList n, Arguments argu) {
     Result rf0 = n.f0.accept(this, argu);
     String intert = iPrinter.getTemp(this.t_num);
@@ -902,12 +917,6 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
       int fpos = qt.getFieldPos(cur_cid, vid);
       ret += "[this+";
       ret += (new Integer(fpos)).toString() + "]";
-      /*
-      String t = getTemp(vv.t_num);
-      iPrinter.printIndentStringln(vv.indent, t + " = " + ret);
-      Result r = new Result(iPrinter.getTemp(vv.t_num));
-      incrTNum();
-      */
       Result r = new Result(ret);
       return r;
     }
@@ -957,6 +966,7 @@ public class VaporVisitor extends GJDepthFirst<Result, Arguments>
   public Result visit(AllocationExpression n, Arguments argu)
   {
     String oid = st.StringOfId(n.f1);
+    // remember cur_oid
     this.cur_oid = oid;
     String allocs = iPrinter.getObjectAlloc(this, oid);
     iPrinter.printIndentString(0, allocs);

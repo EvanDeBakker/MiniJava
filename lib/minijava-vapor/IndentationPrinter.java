@@ -73,6 +73,21 @@ public class IndentationPrinter
   }
 
 
+
+
+  // *********************** BasicArrayAlloc ***********************
+  public String BasicArrayAlloc()
+  {
+    String ret = "";
+    ret += getIndentStringln(0, "func AllocArray(size)");
+    ret += getIndentStringln(2, "bytes = MulS(size 4)");
+    ret += getIndentStringln(2, "bytes = Add(bytes 4)");
+    ret += getIndentStringln(2, "v = HeapAllocZ(bytes)");
+    ret += getIndentStringln(2, "[v] = size");
+    ret += getIndentStringln(2, "ret v");
+    return ret;
+  }
+
   // *********************** ArrayAssignmentStatement ***********************
   // mysterious comments: atomic null
   public String ArrayAccess
@@ -81,6 +96,7 @@ public class IndentationPrinter
     String ret = "";
     String nn = getNull(vv.null_num);
     String t = getTemp(vv.t_num);
+    // store base in another variable
     ret += getIndentStringln(vv.indent, t + " = " + base);
     ret += getIndentStringln(vv.indent, "if " + t + " goto :" + nn);
     ret += getIndentStringln(vv.indent + 2, "Error(\"null pointer\")");
@@ -120,23 +136,6 @@ public class IndentationPrinter
     ret += getIndentStringln(vv.indent, "[" + t + "+4] = " + r);
     return ret;
   }
-
-
-
-  public String BasicArrayAlloc()
-  {
-    String ret = "";
-    ret += getIndentStringln(0, "func AllocArray(size)");
-    ret += getIndentStringln(2, "bytes = MulS(size 4)");
-    ret += getIndentStringln(2, "bytes = Add(bytes 4)");
-    ret += getIndentStringln(2, "v = HeapAllocZ(bytes)");
-    ret += getIndentStringln(2, "[v] = size");
-    ret += getIndentStringln(2, "ret v");
-    return ret;
-  }
-
-
-
 
   // *********************** IfStatement ***********************
   public String ifCondition0(VaporVisitor vv, String cond, int cur_if_num)
@@ -335,6 +334,7 @@ public class IndentationPrinter
     return ret;
   }
 
+  // store the result of return expression in t
   public String getRet(VaporVisitor vv, String r)
   {
     String t = getTemp(vv.t_num);

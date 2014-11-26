@@ -1,8 +1,10 @@
 .PHONY: build clean
+SOURCE_FILES=Arguments.java BuildSymbolTableVisitor.java Clazz.java\
+DataSegment.java IndentationPrinter.java J2V.java Meth.java QueryTable.java\
+Quit.java Result.java SymbolTable.java VaporVisitor.java Var.java
 
 build: clean
 	javac J2V.java
-
 
 testfc: build
 	java J2V < ./lib_test/testland/Factorial.java
@@ -28,6 +30,14 @@ testqs: build
 testtv: build
 	java J2V < ./lib_test/testland/TreeVisitor.java
 
+tar: clean
+	mkdir -p hw3
+	cp $(SOURCE_FILES) hw3
+	tar cvzf hw3.tgz hw3
+	rm -rf hw3
+	rm -rf lib_test/hw3-tester/Output
+
 # passed
 clean:
 	find . -name "*.class" -print0 | xargs -0 rm -rf
+	find . -name "hw3.tgz" -print0 | xargs -0 rm -rf

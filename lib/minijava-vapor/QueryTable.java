@@ -16,12 +16,11 @@
 
 import java.util.*;
 
-/* QueryTable class serves as a general query table that provides the following
+/** QueryTable class serves as a general query table that provides the following
  * functionalities:
  * 1. build info related to datasegments, print datasegments
  * 2. build info related to clazz and meth
  * 3. provides API for step two visitor to query
-
  */
 
 public class QueryTable
@@ -96,11 +95,74 @@ public class QueryTable
 
   public boolean buildDataSegmentsInfo()
   {
-    buildFunctionLabelInfo();
+    buildFunctionLabelInfo1();
     buildFieldPosInfo();
     return true;
   }
 
+  /** Relations between classes can be described using tree structure
+   * First, we build function labels for all base classes, then we add their
+   * children into a stack.
+   * Second, we build function labels for each class in the stack. For each of
+   * these classes, we copy over their parent's function labels and substitute
+   * the overriden functions in them with the overridding functions. Then, we
+   * add this class's non-overridding functions. Finally, we add its children
+   * into the stack if it has any
+   * Iterate the above procedure until the stack is empty
+  */
+
+  public boolean buildFunctionLabelInfo1()
+  {
+    Stack<Clazz> c_stack = new Stack<Clazz>();
+    for(Clazz c : st.getClazzList())
+    {
+      if(c.getParentId() == null)
+      {
+        DataSegment ds = new DataSegment(true, c.getId());
+        for(Meth m : c.getMethList())
+          ds.putFunctionLabel(c.getId(), m.getId());
+        this.addDS(ds);
+        for(Clazz child : st.getChildren(c.getId()))
+          c_stack.push(child);
+      }
+    }
+
+    while(!c_stack.empty())
+    {
+      Clazz c = c_stack.pop();
+      DataSegment ds = new DataSegment(true, c.getId());
+      String parent_id = c.getParentId();
+      Clazz pc = st.getClazz(parent_id);
+      DataSegment parent_ds = this.getDS(pc.getId());
+      ArrayList<String> p_flist = parent_ds.getFunctionLabelList();
+      ArrayList<String> p_f_mo_list = parent_ds.getFunctionLabelMidOnlyList();
+      for(int i = 0; i < p_f_mo_list.size(); i++)
+      {
+        String m = p_f_mo_list.get(i);
+        // if m is overriden
+        if(c.containsMeth(m))
+        {
+          ds.putFunctionLabel(c.getId(), m);
+        }
+        // if m is not overriden
+        else
+        {
+          ds.putFunctionLabelSp(p_flist.get(i));
+        }
+      }
+      for(Meth m : c.getMethList())
+      {
+        if(!ds.isFunctionAdded(m.getId()))
+          ds.putFunctionLabel(c.getId(), m.getId());
+      }
+      this.addDS(ds);
+      for(Clazz child : st.getChildren(c.getId()))
+        c_stack.push(child);
+    }
+    return false;
+  }
+
+  // Deprecated
   public boolean buildFunctionLabelInfo()
   {
     for(Clazz c : st.getClazzList())

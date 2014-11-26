@@ -22,6 +22,8 @@ public class DataSegment {
   public String DS_name;
   // store cid + mid in order
   public ArrayList<String> f_list;
+  // store mid in order
+  public ArrayList<String> f_mid_only_list;
   // map mid to position number
   public HashMap<String, Integer> mid_pos;
   // map field to position number
@@ -36,6 +38,7 @@ public class DataSegment {
     this.f_pos = 0;
     this.DS_name = DS_name;
     this.f_list = new ArrayList<String>();
+    this.f_mid_only_list = new ArrayList<String>();
     this.mid_pos = new HashMap<String, Integer>();
     this.fvid_pos = new ArrayList<String>();
     this.sep_mark = new HashMap<String, Integer>();
@@ -56,9 +59,32 @@ public class DataSegment {
   public boolean putFunctionLabel(String cid, String mid) {
     assert(!mid_pos.containsKey(mid));
     f_list.add(cid + "." + mid);
+    f_mid_only_list.add(mid);
     mid_pos.put(mid, new Integer(f_pos));
     f_pos++;
     return true;
+  }
+
+  public boolean putFunctionLabelSp(String cm)
+  {
+    StringBuilder cb = new StringBuilder();
+    StringBuilder mb = new StringBuilder();
+    boolean collect_cid = true;
+    for(int i = 0; i < cm.length(); i++)
+    {
+      if(cm.charAt(i) == '.')
+      {
+        collect_cid = false;
+        continue;
+      }
+      if(collect_cid)
+        cb.append(cm.charAt(i));
+      else
+        mb.append(cm.charAt(i));
+    }
+    String cid = cb.toString();
+    String mid = mb.toString();
+    return this.putFunctionLabel(cid, mid);
   }
 
   public int getFunctionLabelPos(String mid) {
@@ -67,9 +93,19 @@ public class DataSegment {
     return 4 * v.intValue();
   }
 
+  public boolean isFunctionAdded(String mid)
+  {
+    return mid_pos.containsKey(mid);
+  }
+
   public ArrayList<String> getFunctionLabelList()
   {
     return this.f_list;
+  }
+
+  public ArrayList<String> getFunctionLabelMidOnlyList()
+  {
+    return this.f_mid_only_list;
   }
 
   // field pos

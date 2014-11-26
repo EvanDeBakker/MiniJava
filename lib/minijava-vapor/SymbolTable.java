@@ -70,6 +70,17 @@ public class SymbolTable
 
   public ArrayList<Clazz> getClazzList() {return this.clazz_list;}
 
+  public ArrayList<Clazz> getChildren(String p_cid)
+  {
+    ArrayList<Clazz> children = new ArrayList<Clazz>();
+    for(Clazz c : this.getClazzList())
+    {
+      if (c.getParentId() != null && c.getParentId().equals(p_cid))
+        children.add(c);
+    }
+    return children;
+  }
+
   // used when looking for method in the target class 
   // and its parent class
   public Meth getMeth(String cid, String mid)
