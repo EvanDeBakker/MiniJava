@@ -1,3 +1,4 @@
+
 .PHONY: build clean
 SOURCE_FILES=Arguments.java BuildSymbolTableVisitor.java Clazz.java\
 DataSegment.java IndentationPrinter.java J2V.java Meth.java QueryTable.java\
@@ -32,12 +33,11 @@ testtv: build
 
 tar: clean
 	mkdir -p hw3
-	cp $(SOURCE_FILES) hw3
-	tar cvzf hw3.tgz hw3
-	rm -rf hw3
-	rm -rf lib_test/hw3-tester/Output
+	cp $(SOURCE_FILES) ./hw3
+	tar -cvzf hw3.tgz ./hw3
 
 # passed
 clean:
-	find . -name "*.class" -print0 | xargs -0 rm -rf
-	find . -name "hw3.tgz" -print0 | xargs -0 rm -rf
+	find . -name "*.class" -type f -delete
+	rm -rf lib_test/hw3-tester/Output
+	rm -rf hw3 hw3.tgz 

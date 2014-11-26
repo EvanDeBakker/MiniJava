@@ -1,4 +1,5 @@
 /*
+Custom test case
 The output should be:
 0
 0
