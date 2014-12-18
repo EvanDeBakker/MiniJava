@@ -1,0 +1,34 @@
+18a19
+>   move $t0 $v0
+37c38
+<   
+---
+> 
+43c44
+<   sw $s0 0($sp)
+---
+>   sw $s0 0($sp) #   local[0] = $s0
+66d66
+<   
+69c69
+<   li $v0 1
+---
+>   li $v0 1   # syscall: print integer
+72c72
+<   li $v0 4 
+---
+>   li $v0 4   # syscall: print string
+77c77
+<   li $v0 4
+---
+>   li $v0 4   # syscall: print string
+79c79
+<   li $v0 10 
+---
+>   li $v0 10  # syscall: exit
+83c83
+<   li $v0 9
+---
+>   li $v0 9   # syscall: sbrk
+91d90
+< 

@@ -1,0 +1,81 @@
+const vmt_Fac
+  :Fac.ComputeFac
+
+
+
+
+func Main [in 0, out 2, local 3]
+   $t0 = 4
+   $t1 = HeapAllocZ($t0)
+   local[0] = $t1
+   $t0 = local[0]
+   $t1 = :vmt_Fac
+   [$t0+0] = $t1
+   $t0 = local[0]
+   if $t0 goto :null1
+   $t0 = "null pointer"
+   Error($t0)
+null1:
+   $t0 = local[0]
+   $t1 = local[1]
+   $t1 = [$t0+0]
+   local[1] = $t1
+   $t0 = local[1]
+   $t1 = local[1]
+   $t1 = [$t0+0]
+   local[1] = $t1
+   $v0 = local[0]
+   out[0] = $v0
+   out[1] = 10
+   $t0 = local[1]
+   call $t0
+   local[2] = $v0
+   $t0 = local[2]
+   PrintIntS($t0)
+   ret
+
+func Fac.ComputeFac [in 2, out 2, local 7]
+   $t0 = in[1]
+   $t1 = 1
+   $t2 = LtS($t0 $t1)
+   local[0] = $t2
+   $t0 = local[0]
+   if0 $t0 goto :if1_else
+   local[1] = 1
+   goto :if1_end
+if1_else:
+   $t0 = in[0]
+   $t1 = local[2]
+   $t1 = [$t0+0]
+   local[2] = $t1
+   $t0 = local[2]
+   $t1 = local[2]
+   $t1 = [$t0+0]
+   local[2] = $t1
+   $t0 = in[1]
+   $t1 = 1
+   $t2 = Sub($t0 $t1)
+   local[3] = $t2
+   $v0 = in[0]
+   out[0] = $v0
+   $v0 = local[3]
+   out[1] = $v0
+   $t0 = local[2]
+   call $t0
+   local[4] = $v0
+   $v0 = in[0]
+   out[0] = $v0
+   $v0 = local[3]
+   out[1] = $v0
+   $t0 = local[2]
+   call $t0
+   local[4] = $v0
+   $t0 = in[1]
+   $t1 = local[4]
+   $t2 = MulS($t0 $t1)
+   local[1] = $t2
+if1_end:
+   $v0 = local[1]
+   ret
+
+
